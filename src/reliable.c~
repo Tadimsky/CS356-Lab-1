@@ -103,7 +103,7 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *s)
 {	
-	debug("Hello there fool");
+	fprintf(stderr, "Hello there fool");
 	char buffer[500];
 	int num = conn_input(s->c, buffer, 500);
 	printf("%d", num);
