@@ -17,16 +17,51 @@
 
 
 struct reliable_state {
+       /* aka rel_t */
   rel_t *next;			/* Linked list for traversing all connections */
   rel_t **prev;
 
   conn_t *c;			/* This is the connection object */
 
   /* Add your own data fields below this */
+    
+    //WE NEED...
+    
+    //linked list of packet infos (max size windowsize)
+        //packet infos will contain the packets themselves
+    //current sequence number (to send)
+    
+    
 
 };
 rel_t *rel_list;
 
+/*
+ Structure we use for tracking packets to be sent
+ */
+struct node {
+    
+    packet_t * pack;
+    
+    int time_sent; //update everytime we resend
+    uint16_t request_attempts;
+    
+    bool ack_received;  //mark true when sender receives ACK from receiver
+                        //then we can remove from linked list
+    
+    node * next;
+    node ** prev;
+    
+};
+
+node *node_create(packet_t * pack) {
+    node *n;
+    n = xmalloc (sizeof (*n));
+    
+    n -> pack = pack;
+    n -> request_attempts = 0;
+    n -> ack_received = FALSE;
+}
 
 
 /* Creates a new reliable protocol session, returns NULL on failure.
@@ -115,7 +150,7 @@ void
 rel_read (rel_t *s)
 {
     /* TODO */
-
+    
     
 }
 
