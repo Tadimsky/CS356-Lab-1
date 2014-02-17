@@ -16,7 +16,6 @@
 #include "rlib.h"
 
 
-
 struct reliable_state {
   rel_t *next;			/* Linked list for traversing all connections */
   rel_t **prev;
@@ -27,8 +26,6 @@ struct reliable_state {
 
 };
 rel_t *rel_list;
-
-
 
 
 
@@ -62,7 +59,11 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
   /* Do any other initialization you need here */
 
-
+    /* TODO */
+    
+    
+    
+    
   return r;
 }
 
@@ -75,6 +76,11 @@ rel_destroy (rel_t *r)
   conn_destroy (r->c);
 
   /* Free any other allocated memory here */
+
+    /* TODO */
+    
+    
+
 }
 
 
@@ -91,27 +97,42 @@ rel_demux (const struct config_common *cc,
 	   const struct sockaddr_storage *ss,
 	   packet_t *pkt, size_t len)
 {
+    /* TODO */
+
+    
 }
 
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
+    /* TODO */
+
+    
 }
 
 
 void
 rel_read (rel_t *s)
 {
+    /* TODO */
+
+    
 }
 
 void
 rel_output (rel_t *r)
 {
+    /* TODO */
+
+    
 }
 
 void
 rel_timer ()
 {
   /* Retransmit any packets that need to be retransmitted */
+    
+    /* TODO */
+
 
 }
