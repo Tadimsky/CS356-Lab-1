@@ -13,9 +13,29 @@
 #include <sys/uio.h>
 #include <netinet/in.h>
 
+#include <stdbool.h>
 #include "rlib.h"
 
-#define debug(...)   fprintf(stderr, __VA_ARGS__)
+/*
+ Structure we use for tracking packets to be sent
+ */
+struct node {
+    
+    packet_t * pack;
+    
+    int time_sent; //update everytime we resend
+    uint16_t request_attempts;
+    
+    bool ack_received;  //mark true when sender receives ACK from receiver
+    //then we can remove from linked list
+    
+    struct node * next;
+    struct node ** prev;
+    
+};
+
+typedef struct node node_t;
+
 
 struct reliable_state {
        /* aka rel_t */
@@ -33,25 +53,6 @@ struct reliable_state {
 };
 rel_t *rel_list;
 
-/*
- Structure we use for tracking packets to be sent
- */
-struct node {
-    
-    packet_t * pack;
-    
-    int time_sent; //update everytime we resend
-    uint16_t request_attempts;
-    
-    bool ack_received;  //mark true when sender receives ACK from receiver
-                        //then we can remove from linked list
-    
-    node_t * next;
-    node_t ** prev;
-    
-};
-
-typedef struct node node_t;
 
 node_t *node_create(packet_t * pack) {
     node_t *n;
@@ -59,7 +60,9 @@ node_t *node_create(packet_t * pack) {
     
     n -> pack = pack;
     n -> request_attempts = 0;
-    n -> ack_received = FALSE;
+    n -> ack_received = false;
+    
+    return n;
 }
 
 
@@ -147,11 +150,10 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
 void
 rel_read (rel_t *s)
-{	
-	debug("Hello there fool");
-	char buffer[500];
-	int num = conn_input(s->c, buffer, 500);
-	printf("%d", num);
+{
+    /* TODO */
+    
+    
 }
 
 void
@@ -171,5 +173,3 @@ rel_timer ()
 
 
 }
-
-
