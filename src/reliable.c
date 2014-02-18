@@ -49,18 +49,17 @@ struct reliable_state {
     /* Add your own data fields below this */
     
     node_t * current_node;
-    
-    uint32_t current_seqno;
+    uint32_t * current_seqno;
     
 };
 rel_t *rel_list;
 
 
-node_t *node_create(packet_t * pack) {
+node_t *node_create(packet_t * new_packet) {
     node_t *n;
     n = xmalloc (sizeof (*n));
     
-    n -> pack = pack;
+    n -> pack = new_packet;
     n -> request_attempts = 0;
     n -> ack_received = false;
     
@@ -100,9 +99,13 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     /* TODO */
     
-    
-    
-    
+    /*
+    node_t *node;
+    node = node_create(NULL);
+    r->current_node = node;
+    //current_node is initialized as an empty node
+    */
+
     return r;
 }
 
@@ -136,23 +139,14 @@ rel_demux (const struct config_common *cc,
            const struct sockaddr_storage *ss,
            packet_t *pkt, size_t len)
 {
-    /* TODO */
-    
-    /*
-     if ss has sequence number 1, allocate a new conn_t using rel_create()
-     
-     
-     
-     
-     
-     */
-    
+    /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
     /* TODO */
+    
     
     
 }
