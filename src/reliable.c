@@ -145,16 +145,23 @@ rel_demux (const struct config_common *cc,
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
+    /* RECEIVER SIDE */
     /* TODO */
     
-    
-    
+    if (pkt -> len < 12) {
+        //pkt is an ACK
+    }
+    else {
+        //pkt is a data PACKET
+    }
+        
 }
 
 
 void
 rel_read (rel_t *s)
-{	
+{
+    /* SENDER SIDE */
 	debug("Hello there fool");
 	char buffer[500];
 	int num = conn_input(s->c, buffer, 500);
@@ -164,7 +171,11 @@ rel_read (rel_t *s)
 void
 rel_output (rel_t *r)
 {
+    /* RECEIVER SIDE */
     /* TODO */
+    
+    
+    
     
     
 }
