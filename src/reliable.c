@@ -142,6 +142,9 @@ rel_demux (const struct config_common *cc,
     /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
+/*
+ Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
+ */
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
@@ -157,7 +160,9 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
 }
 
-
+/*
+ Take information from standard input and create packets.  Will call some means of sending to the appropriate receiver.
+ */
 void
 rel_read (rel_t *s)
 {
