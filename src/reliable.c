@@ -161,10 +161,26 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *s)
 {	
-	debug("Hello there fool");
 	char buffer[500];
-	int num = conn_input(s->c, buffer, 500);
-	printf("%d", num);
+	// drain the console
+	while (true) {
+		int bytes_read = conn_input(s->c, buffer, 500);
+		// no more
+		if (bytes_read == 0) {
+			return;
+		}
+		packet_t pkt;
+		int packet_size = 12;
+		if (bytes_read > 0) {
+			memcpy(pkt->data, buffer, bytes_read);
+			packet_size += bytes_read;
+			pkt->seqno = htons(1); // set the sequence number
+		}
+		pkt->len = htons(packet_size);
+		pkt->ackno = htons(1); // the sequence number of the last packet received + 1
+		pkt->cksum = cksum(pkt, packet_size);
+	}
+
 }
 
 void
