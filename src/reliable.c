@@ -51,6 +51,11 @@ struct reliable_state {
     node_t * current_node;
     uint32_t * current_seqno;
     
+    int window_size;
+    
+    //Array of size window that holds incomming packets so that they can be added to our linked list in order.
+    packet_t* receive_ordering_buffer;//[];
+    
 };
 rel_t *rel_list;
 
@@ -76,7 +81,6 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
             const struct config_common *cc)
 {
     rel_t *r;
-    
     r = xmalloc (sizeof (*r));
     memset (r, 0, sizeof (*r));
     
@@ -105,6 +109,11 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->current_node = node;
     //current_node is initialized as an empty node
     */
+    
+    r->window_size = (cc->window);
+    
+    packet_t buff[cc->window];
+    r->receive_ordering_buffer = buff;
 
     return r;
 }
@@ -143,7 +152,12 @@ rel_demux (const struct config_common *cc,
 }
 
 /*
- Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
+ Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  
+ If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  
+ If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
+
+ n is the actual size where pkt -> len is what it should be.  
+ A discrepancy would indicate some bits were or the packet is not properly formed. Thus we will discard it.
  */
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
