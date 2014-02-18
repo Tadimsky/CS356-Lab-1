@@ -36,8 +36,6 @@ struct node {
     
 };
 
-//hello
-
 typedef struct node node_t;
 
 
