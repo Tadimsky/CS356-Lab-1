@@ -7,12 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1E26AD7D18B4141E004C19AE /* lab_1.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1E26AD7C18B4141E004C19AE /* lab_1.1 */; };
-		1E26AD8B18B41445004C19AE /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD8318B41445004C19AE /* Makefile */; };
-		1E26AD8C18B41445004C19AE /* reliable.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD8518B41445004C19AE /* reliable.c */; };
-		1E26AD8D18B41445004C19AE /* reliable.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E26AD8618B41445004C19AE /* reliable.o */; };
-		1E26AD8E18B41445004C19AE /* rlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD8718B41445004C19AE /* rlib.c */; };
-		1E26AD8F18B41445004C19AE /* rlib.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E26AD8918B41445004C19AE /* rlib.o */; };
+		1E26AD9818B416D1004C19AE /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD9018B416D0004C19AE /* Makefile */; };
+		1E26AD9918B416D1004C19AE /* reliable.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD9218B416D0004C19AE /* reliable.c */; };
+		1E26AD9A18B416D1004C19AE /* reliable.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E26AD9318B416D0004C19AE /* reliable.o */; };
+		1E26AD9B18B416D1004C19AE /* rlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E26AD9418B416D0004C19AE /* rlib.c */; };
+		1E26AD9C18B416D1004C19AE /* rlib.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E26AD9618B416D0004C19AE /* rlib.o */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -22,7 +21,6 @@
 			dstPath = /usr/share/man/man1/;
 			dstSubfolderSpec = 0;
 			files = (
-				1E26AD7D18B4141E004C19AE /* lab_1.1 in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -30,15 +28,14 @@
 
 /* Begin PBXFileReference section */
 		1E26AD7718B4141E004C19AE /* lab_1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lab_1; sourceTree = BUILT_PRODUCTS_DIR; };
-		1E26AD7C18B4141E004C19AE /* lab_1.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = lab_1.1; sourceTree = "<group>"; };
-		1E26AD8318B41445004C19AE /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		1E26AD8418B41445004C19AE /* reference */ = {isa = PBXFileReference; lastKnownFileType = file; path = reference; sourceTree = "<group>"; };
-		1E26AD8518B41445004C19AE /* reliable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = reliable.c; sourceTree = "<group>"; };
-		1E26AD8618B41445004C19AE /* reliable.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = reliable.o; sourceTree = "<group>"; };
-		1E26AD8718B41445004C19AE /* rlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rlib.c; sourceTree = "<group>"; };
-		1E26AD8818B41445004C19AE /* rlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rlib.h; sourceTree = "<group>"; };
-		1E26AD8918B41445004C19AE /* rlib.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = rlib.o; sourceTree = "<group>"; };
-		1E26AD8A18B41445004C19AE /* stripsol */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = stripsol; sourceTree = "<group>"; };
+		1E26AD9018B416D0004C19AE /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../src/Makefile; sourceTree = "<group>"; };
+		1E26AD9118B416D0004C19AE /* reference */ = {isa = PBXFileReference; lastKnownFileType = file; name = reference; path = ../src/reference; sourceTree = "<group>"; };
+		1E26AD9218B416D0004C19AE /* reliable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = reliable.c; path = ../src/reliable.c; sourceTree = "<group>"; };
+		1E26AD9318B416D0004C19AE /* reliable.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = reliable.o; path = ../src/reliable.o; sourceTree = "<group>"; };
+		1E26AD9418B416D0004C19AE /* rlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rlib.c; path = ../src/rlib.c; sourceTree = "<group>"; };
+		1E26AD9518B416D0004C19AE /* rlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rlib.h; path = ../src/rlib.h; sourceTree = "<group>"; };
+		1E26AD9618B416D0004C19AE /* rlib.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = rlib.o; path = ../src/rlib.o; sourceTree = "<group>"; };
+		1E26AD9718B416D1004C19AE /* stripsol */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; name = stripsol; path = ../src/stripsol; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,8 +43,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1E26AD8F18B41445004C19AE /* rlib.o in Frameworks */,
-				1E26AD8D18B41445004C19AE /* reliable.o in Frameworks */,
+				1E26AD9C18B416D1004C19AE /* rlib.o in Frameworks */,
+				1E26AD9A18B416D1004C19AE /* reliable.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,7 +54,14 @@
 		1E26AD6E18B4141E004C19AE = {
 			isa = PBXGroup;
 			children = (
-				1E26AD7918B4141E004C19AE /* lab_1 */,
+				1E26AD9018B416D0004C19AE /* Makefile */,
+				1E26AD9118B416D0004C19AE /* reference */,
+				1E26AD9218B416D0004C19AE /* reliable.c */,
+				1E26AD9318B416D0004C19AE /* reliable.o */,
+				1E26AD9418B416D0004C19AE /* rlib.c */,
+				1E26AD9518B416D0004C19AE /* rlib.h */,
+				1E26AD9618B416D0004C19AE /* rlib.o */,
+				1E26AD9718B416D1004C19AE /* stripsol */,
 				1E26AD7818B4141E004C19AE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -68,22 +72,6 @@
 				1E26AD7718B4141E004C19AE /* lab_1 */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		1E26AD7918B4141E004C19AE /* lab_1 */ = {
-			isa = PBXGroup;
-			children = (
-				1E26AD8318B41445004C19AE /* Makefile */,
-				1E26AD8418B41445004C19AE /* reference */,
-				1E26AD8518B41445004C19AE /* reliable.c */,
-				1E26AD8618B41445004C19AE /* reliable.o */,
-				1E26AD8718B41445004C19AE /* rlib.c */,
-				1E26AD8818B41445004C19AE /* rlib.h */,
-				1E26AD8918B41445004C19AE /* rlib.o */,
-				1E26AD8A18B41445004C19AE /* stripsol */,
-				1E26AD7C18B4141E004C19AE /* lab_1.1 */,
-			);
-			path = lab_1;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -137,9 +125,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1E26AD8B18B41445004C19AE /* Makefile in Sources */,
-				1E26AD8C18B41445004C19AE /* reliable.c in Sources */,
-				1E26AD8E18B41445004C19AE /* rlib.c in Sources */,
+				1E26AD9818B416D1004C19AE /* Makefile in Sources */,
+				1E26AD9918B416D1004C19AE /* reliable.c in Sources */,
+				1E26AD9B18B416D1004C19AE /* rlib.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
