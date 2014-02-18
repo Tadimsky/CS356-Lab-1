@@ -51,6 +51,9 @@ struct reliable_state {
     node_t * current_node;
     uint32_t * current_seqno;
     
+    node_t * received_data_linked_list;
+    node_t * last_data;
+    
 };
 rel_t *rel_list;
 
@@ -142,8 +145,7 @@ rel_demux (const struct config_common *cc,
     /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
-/*
- Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
+/*Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
  */
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
@@ -151,14 +153,44 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     /* RECEIVER SIDE */
     /* TODO */
     
+    if (n != pkt -> len) {
+        //we have not received the full packet or it's an error packet
+        //ignore it and wait for the packet to come in its entirety
+        return;
+    }
+    
+    
     if (pkt -> len < 12) {
         //pkt is an ACK
-    }
-    else {
+    } else {
         //pkt is a data PACKET
-    }
         
+        //add it to the window-buffer and send ACK
+        
+        //if receive_buffer[0] is full
+            //move receive_buffer[0] into data linked list
+            //shift receive_buffer entries forward
+        //else
+            //return
+    }
+    
+    
 }
+
+void
+shift_receive_buffer (rel_t *r) {
+    
+    node_t * new_node = node_create(receive_order_buffer[0]);
+    
+    r -> last_data -> next = new_node;
+    
+    for (int i = 0; i < r -> window_size - 2; i--) {
+        receive_order_buffer[i] = receive_order_buffer[i+1];
+    }
+    receive_order_buffer[r -> window_size - 1] = NULL;
+    
+}
+
 
 /*
  Take information from standard input and create packets.  Will call some means of sending to the appropriate receiver.
