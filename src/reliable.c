@@ -13,24 +13,8 @@
 #include <sys/uio.h>
 #include <netinet/in.h>
 
+#include <stdbool.h>
 #include "rlib.h"
-
-
-struct reliable_state {
-       /* aka rel_t */
-    rel_t *next;			/* Linked list for traversing all connections */
-    rel_t **prev;
-
-    conn_t *c;			/* This is the connection object */
-
-  /* Add your own data fields below this */
-    
-    node_t * current_node;
-    
-    uint32_t current_seqno;
-
-};
-rel_t *rel_list;
 
 /*
  Structure we use for tracking packets to be sent
@@ -43,14 +27,32 @@ struct node {
     uint16_t request_attempts;
     
     bool ack_received;  //mark true when sender receives ACK from receiver
-                        //then we can remove from linked list
+    //then we can remove from linked list
     
-    node_t * next;
-    node_t ** prev;
+    struct node * next;
+    struct node ** prev;
     
 };
 
 typedef struct node node_t;
+
+
+struct reliable_state {
+    /* aka rel_t */
+    rel_t *next;			/* Linked list for traversing all connections */
+    rel_t **prev;
+    
+    conn_t *c;			/* This is the connection object */
+    
+    /* Add your own data fields below this */
+    
+    node_t * current_node;
+    
+    uint32_t current_seqno;
+    
+};
+rel_t *rel_list;
+
 
 node_t *node_create(packet_t * pack) {
     node_t *n;
@@ -58,7 +60,9 @@ node_t *node_create(packet_t * pack) {
     
     n -> pack = pack;
     n -> request_attempts = 0;
-    n -> ack_received = FALSE;
+    n -> ack_received = false;
+    
+    return n;
 }
 
 
@@ -68,52 +72,52 @@ node_t *node_create(packet_t * pack) {
  * rel_demux.) */
 rel_t *
 rel_create (conn_t *c, const struct sockaddr_storage *ss,
-	    const struct config_common *cc)
+            const struct config_common *cc)
 {
-  rel_t *r;
-
-  r = xmalloc (sizeof (*r));
-  memset (r, 0, sizeof (*r));
-
-  if (!c) {
-    c = conn_create (r, ss);
+    rel_t *r;
+    
+    r = xmalloc (sizeof (*r));
+    memset (r, 0, sizeof (*r));
+    
     if (!c) {
-      free (r);
-      return NULL;
+        c = conn_create (r, ss);
+        if (!c) {
+            free (r);
+            return NULL;
+        }
     }
-  }
-
-  r->c = c;
-  r->next = rel_list;
-  r->prev = &rel_list;
-  if (rel_list)
-    rel_list->prev = &r->next;
-  rel_list = r;
-
-  /* Do any other initialization you need here */
-
+    
+    r->c = c;
+    r->next = rel_list;
+    r->prev = &rel_list;
+    if (rel_list)
+        rel_list->prev = &r->next;
+    rel_list = r;
+    
+    /* Do any other initialization you need here */
+    
     /* TODO */
     
     
     
     
-  return r;
+    return r;
 }
 
 void
 rel_destroy (rel_t *r)
 {
-  if (r->next)
-    r->next->prev = r->prev;
-  *r->prev = r->next;
-  conn_destroy (r->c);
-
-  /* Free any other allocated memory here */
-
+    if (r->next)
+        r->next->prev = r->prev;
+    *r->prev = r->next;
+    conn_destroy (r->c);
+    
+    /* Free any other allocated memory here */
+    
     /* TODO */
     
     
-
+    
 }
 
 
@@ -127,11 +131,19 @@ rel_destroy (rel_t *r)
  */
 void
 rel_demux (const struct config_common *cc,
-	   const struct sockaddr_storage *ss,
-	   packet_t *pkt, size_t len)
+           const struct sockaddr_storage *ss,
+           packet_t *pkt, size_t len)
 {
     /* TODO */
-
+    
+    /*
+     if ss has sequence number 1, allocate a new conn_t using rel_create()
+     
+     
+     
+     
+     
+     */
     
 }
 
@@ -139,7 +151,7 @@ void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
     /* TODO */
-
+    
     
 }
 
@@ -156,16 +168,16 @@ void
 rel_output (rel_t *r)
 {
     /* TODO */
-
+    
     
 }
 
 void
 rel_timer ()
 {
-  /* Retransmit any packets that need to be retransmitted */
+    /* Retransmit any packets that need to be retransmitted */
     
     /* TODO */
-
-
+    
+    
 }
