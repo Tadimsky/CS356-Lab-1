@@ -18,20 +18,16 @@
 
 struct reliable_state {
        /* aka rel_t */
-  rel_t *next;			/* Linked list for traversing all connections */
-  rel_t **prev;
+    rel_t *next;			/* Linked list for traversing all connections */
+    rel_t **prev;
 
-  conn_t *c;			/* This is the connection object */
+    conn_t *c;			/* This is the connection object */
 
   /* Add your own data fields below this */
     
-    //WE NEED...
+    node_t * current_node;
     
-    //linked list of packet infos (max size windowsize)
-        //packet infos will contain the packets themselves
-    //current sequence number (to send)
-    
-    
+    uint32_t current_seqno;
 
 };
 rel_t *rel_list;
@@ -49,13 +45,15 @@ struct node {
     bool ack_received;  //mark true when sender receives ACK from receiver
                         //then we can remove from linked list
     
-    node * next;
-    node ** prev;
+    node_t * next;
+    node_t ** prev;
     
 };
 
-node *node_create(packet_t * pack) {
-    node *n;
+typedef struct node node_t;
+
+node_t *node_create(packet_t * pack) {
+    node_t *n;
     n = xmalloc (sizeof (*n));
     
     n -> pack = pack;
