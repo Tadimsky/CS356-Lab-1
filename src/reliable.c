@@ -91,8 +91,8 @@ struct reliable_state {
     //Array of size window that holds incomming packets so that they can be added to our linked list in order.
     packet_t* receive_ordering_buffer;
 
-//    //Array of size window that holds outgoing packets so that they can be added to our linked list in order.
-//    packet_t* send_ordering_buffer;
+    //Array of size window that holds sent packets. Remove from the buffer when ACK comes back.
+    packet_t* send_ordering_buffer;
 
 };
 rel_t *rel_list;
@@ -130,9 +130,11 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     r->window_size = cc->window;
     
-    packet_t * buff = xmalloc(sizeof(packet_t) * cc->window);
-    r->receive_ordering_buffer = buff;
-//    r->send_ordering_buffer = buff;
+    packet_t * receive_buff = xmalloc(sizeof(packet_t) * cc->window);
+    r->receive_ordering_buffer = receive_buff;
+//    uint32_t * send_buff = xmalloc(sizeof(uint32_t) * cc->window);
+//    r->send_ordering_buffer = send_buff;
+    r->send_ordering_buffer = receive_buff;
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
     
@@ -225,28 +227,27 @@ void shift_receive_buffer (rel_t *r) {
 }
 
 
-//
-//void shift_send_buffer (rel_t *r) {
-//    debug("About to shift send buffer\n");
+
+void shift_send_buffer (rel_t *r, int empty_cell) {
+    debug("About to shift send buffer\n");
 //    node_t * new_node = node_create(&r -> send_ordering_buffer[0]);
-//    
+    
 //    if (r->last_data_sent != NULL) {
 //    	r -> last_data_sent -> next = new_node;
 //    }
 //    r -> last_data_sent = new_node;
-//    
-//    int i;
-//    for (i = 0; i < r -> window_size - 2; i--) {
-//        r -> send_ordering_buffer[i] = r -> send_ordering_buffer[i+1];
-//    }
-//    
-//    r -> send_ordering_buffer[r -> window_size - 1] = null_packet();
-//    
+    
+    int i;
+    for (i = empty_cell; i < r -> window_size - 2; i--) {
+        r -> send_ordering_buffer[i] = r -> send_ordering_buffer[i+1];
+    }
+    r -> send_ordering_buffer[r -> window_size - 1] = null_packet();
+    
 //    // if after shifting the buffer we now have the next packet available too, shift the buffer again
 //    if (r -> send_ordering_buffer[0].seqno != null_packet().seqno) {
 //        shift_send_buffer(r);
 //    }
-//}
+}
 
 
 /*
@@ -273,7 +274,23 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
-        //handle sender buffer appropriately and return
+        uint32_t ackno = pkt->ackno;
+        int i;
+        //check each frame of the send_buffer (although it should really only ever be the 0th index)
+        for (i = 0; i < r -> window_size; i++) {
+            //if ackno we've just received = seqno of the sent packet + 1, server has received the packet and we can eliminate it from the send buffer
+            if (r -> send_ordering_buffer[i].seqno == ackno - 1) {
+                
+                //this inner if-statement is to check if the ack we get is for a packet that's not the next sequential packet
+                if (i > 0) {
+                    debug("received ack for a packet that shouldn't be acked yet");
+                }
+                
+                r -> send_ordering_buffer[i] = null_packet();
+                shift_send_buffer(r, i);
+                
+            }
+        }
         
         //take this ack out of the sender buffer, can now continue onto next packet
         
@@ -306,6 +323,9 @@ rel_read (rel_t *r)
 	while (true) {
         
         //if there's no space in the buffer, return (cant make more packets)
+        if (r -> send_ordering_buffer[r -> window_size - 1].seqno != null_packet().seqno) {
+            return;
+        }
         
 		int bytes_read = conn_input(r->c, buffer, 500);
 
@@ -327,7 +347,14 @@ rel_read (rel_t *r)
 		pkt.cksum = cksum((void*)&pkt, packet_size);
 
 		conn_sendpkt(r->c, &pkt, packet_size);
+        
         //put this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
+        r->send_ordering_buffer[r -> window_size - 1] = pkt;
+        if (r -> send_ordering_buffer[0].seqno == null_packet().seqno) {
+            //we have room in the send buffer to read more packets in
+            shift_send_buffer(r, 0);
+            
+        }
 
 		// add the packet to the send queue so that
 		// we can track what has been received by the
