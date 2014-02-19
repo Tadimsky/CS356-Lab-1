@@ -33,19 +33,16 @@ struct node {
     int time_sent; //update everytime we resend
     uint16_t request_attempts;
     
-    bool ack_received;  //mark true when sender receives ACK from receiver
-    //then we can remove from linked list
+//    bool ack_received;  //mark true when sender receives ACK from receiver
     
     struct node * next;
     struct node ** prev;
     
 };
-
 typedef struct node node_t;
 
 
 struct reliable_state {
-    /* aka rel_t */
     rel_t *next;			/* Linked list for traversing all connections */
     rel_t **prev;
     
@@ -80,24 +77,14 @@ node_t *node_create(packet_t * new_packet) {
     
     n -> pkt = new_packet;
     n -> request_attempts = 0;
-    n -> ack_received = false;
     
     return n;
 }
 
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
-//packet_t * null_packet () {
-//    packet_t * p;
-//    p = xmalloc(sizeof(*p));
-//    memset (p, 0, sizeof (*p));
-//    p -> seqno = 0;
-//    return p;
-//}
 packet_t null_packet () {
     packet_t p;
-//    p = xmalloc(sizeof(*p));
-//    memset (p, 0, sizeof (*p));
     p.seqno = 0;
     return p;
 }
@@ -337,7 +324,6 @@ rel_output (rel_t *r)
     
     if (conn_bufspace(r -> c) > (r -> last_data -> pkt -> len)) {
         conn_output(r -> c, r -> last_data -> pkt -> data, r -> last_data -> pkt -> len);
-        //SEND ACK FOR THIS PACKET
         send_ack(r);
     }
     
