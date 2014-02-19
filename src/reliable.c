@@ -180,7 +180,11 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     } else {
         //pkt is a data PACKET
         
-        //add it to the window-buffer and send ACK
+        //add it to the window-buffer
+        
+        int * offset = (pkt -> seqno) - (r -> seqno);
+        
+        r -> receive_ordering_buffer[offset] = pkt;
         
         //if receive_buffer[0] is full
             //move receive_buffer[0] into data linked list
@@ -203,7 +207,7 @@ shift_receive_buffer (rel_t *r) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
     
-    r -> receive_ordering_buffer[r -> window_size - 1] = NULL packet;
+    r -> receive_ordering_buffer[r -> window_size - 1] = NULL;
     
 }
 
