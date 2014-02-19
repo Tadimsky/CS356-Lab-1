@@ -40,36 +40,6 @@ struct node {
 };
 typedef struct node node_t;
 
-
-struct reliable_state {
-    rel_t *next;			/* Linked list for traversing all connections */
-    rel_t **prev;
-    
-    conn_t *c;			/* This is the connection object */
-    
-    /* Add your own data fields below this */
-
-    // The final data structure we want.
-    node_t * received_data_linked_list;
-    
-    // Pointer to slot where the most recent data was added.
-    node_t * last_data;
-    
-    int window_size;
-    
-    // All packets with sequence number lower than ackno have been recieved by the SENDER
-    uint32_t ackno;
-    
-    // The next seqno the receiver is expecting. The lowest order number in the current window.
-    uint32_t seqno;
-    
-    //Array of size window that holds incomming packets so that they can be added to our linked list in order.
-    packet_t* receive_ordering_buffer;
-    
-};
-rel_t *rel_list;
-
-
 node_t * node_create(packet_t * new_packet) {
     node_t *n;
     n = xmalloc (sizeof (*n));
@@ -88,6 +58,44 @@ packet_t null_packet () {
     p.seqno = 0;
     return p;
 }
+
+
+struct reliable_state {
+    rel_t *next;			/* Linked list for traversing all connections */
+    rel_t **prev;
+    
+    conn_t *c;			/* This is the connection object */
+    
+    /* Add your own data fields below this */
+
+    // The final data structure we want.
+    node_t * received_data_linked_list;
+    
+    // Pointer to slot where the most recent data was received.
+    node_t * last_data_received;
+    
+    // Data structure with all sent packets
+    node_t * sent_data_linked_list;
+    
+    // Pointer to the last sent packet node
+    node_t * last_data_sent;
+    
+    int window_size;
+    
+    // All packets with sequence number lower than ackno have been recieved by the SENDER
+    uint32_t ackno;
+    
+    // The next seqno the receiver is expecting. The lowest order number in the current window.
+    uint32_t seqno;
+    
+    //Array of size window that holds incomming packets so that they can be added to our linked list in order.
+    packet_t* receive_ordering_buffer;
+
+//    //Array of size window that holds outgoing packets so that they can be added to our linked list in order.
+//    packet_t* send_ordering_buffer;
+
+};
+rel_t *rel_list;
 
 
 /* Creates a new reliable protocol session, returns NULL on failure.
@@ -124,8 +132,16 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     packet_t * buff = xmalloc(sizeof(packet_t) * cc->window);
     r->receive_ordering_buffer = buff;
+//    r->send_ordering_buffer = buff;
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
+    
+    packet_t new_packet = null_packet();
+    node_t * first_node = node_create(&new_packet);
+    r->received_data_linked_list = first_node;
+    r->last_data_received = first_node;
+    r->sent_data_linked_list = first_node;
+    r->last_data_sent = first_node;
 
     return r;
 }
@@ -182,13 +198,13 @@ void rel_demux (const struct config_common *cc,
  * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
  */
 void shift_receive_buffer (rel_t *r) {
-    debug("About to shift buffer\n");
+    debug("About to shift receive buffer\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
-    if (r->last_data != NULL) {
-    	r -> last_data -> next = new_node;
+    if (r->last_data_received != NULL) {
+    	r -> last_data_received -> next = new_node;
     }
-    r -> last_data = new_node;
+    r -> last_data_received = new_node;
 
     // SEND ACK(new_node+1);
     // increment ack no
@@ -207,6 +223,30 @@ void shift_receive_buffer (rel_t *r) {
         shift_receive_buffer(r);
     }
 }
+
+
+//
+//void shift_send_buffer (rel_t *r) {
+//    debug("About to shift send buffer\n");
+//    node_t * new_node = node_create(&r -> send_ordering_buffer[0]);
+//    
+//    if (r->last_data_sent != NULL) {
+//    	r -> last_data_sent -> next = new_node;
+//    }
+//    r -> last_data_sent = new_node;
+//    
+//    int i;
+//    for (i = 0; i < r -> window_size - 2; i--) {
+//        r -> send_ordering_buffer[i] = r -> send_ordering_buffer[i+1];
+//    }
+//    
+//    r -> send_ordering_buffer[r -> window_size - 1] = null_packet();
+//    
+//    // if after shifting the buffer we now have the next packet available too, shift the buffer again
+//    if (r -> send_ordering_buffer[0].seqno != null_packet().seqno) {
+//        shift_send_buffer(r);
+//    }
+//}
 
 
 /*
@@ -257,12 +297,12 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
  Take information from standard input and create packets.  Will call some means of sending to the appropriate receiver.
  */
 void
-rel_read (rel_t *s)
+rel_read (rel_t *r)
 {
 	char buffer[500];
 	// drain the console
 	while (true) {
-		int bytes_read = conn_input(s->c, buffer, 500);
+		int bytes_read = conn_input(r->c, buffer, 500);
 
 		if (bytes_read == 0) {
 			return;
@@ -275,19 +315,25 @@ rel_read (rel_t *s)
 			packet_size += bytes_read;
 
 		}
-		pkt.seqno = htonl(s->seqno); // set the sequence number
-		s->seqno = s->seqno + 1;
+		pkt.seqno = htonl(r->seqno); // set the sequence number
+		r->seqno = r->seqno + 1;
 		pkt.len = htons(packet_size);
-		pkt.ackno = htonl(s->ackno); // the sequence number of the last packet received + 1
+		pkt.ackno = htonl(r->ackno); // the sequence number of the last packet received + 1
 		pkt.cksum = cksum((void*)&pkt, packet_size);
 
-		conn_sendpkt(s->c, &pkt, packet_size);
+		conn_sendpkt(r->c, &pkt, packet_size);
 
 		// add the packet to the send queue so that
 		// we can track what has been received by the
 		// receiver.
+        node_t * sent_node = node_create(&pkt);
+        r -> last_data_sent -> next = sent_node;
+        r -> last_data_sent = sent_node;
 
-
+        /*
+         THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
+         */
+        
 		if (bytes_read == -1) {
 			return;
 		}
@@ -311,8 +357,8 @@ rel_output (rel_t *r)
 {
 	debug("Rel Output");
 
-    if (conn_bufspace(r -> c) > (r -> last_data -> pkt -> len)) {
-        conn_output(r -> c, r -> last_data -> pkt -> data, r -> last_data -> pkt -> len);
+    if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
+        conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
     }
     
