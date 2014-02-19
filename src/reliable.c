@@ -55,6 +55,10 @@ struct reliable_state {
     node_t * last_data;
     
     int window_size;
+    // All packets with sequence number lower than ack_number have been recieved by the SENDER
+    int ackno;
+    // The next seq_number the receiver is expecting. The lowest order number in the current window.
+    int seqno;
     
     //Array of size window that holds incomming packets so that they can be added to our linked list in order.
     packet_t* receive_ordering_buffer;
@@ -117,6 +121,8 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     packet_t buff[cc->window];
     r->receive_ordering_buffer = buff;
+    r->seqno = 1;
+    r->ackno = 1;
 
     return r;
 }
