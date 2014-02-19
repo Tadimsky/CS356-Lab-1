@@ -172,6 +172,8 @@ shift_receive_buffer (rel_t *r) {
     r -> last_data -> next = new_node;
     r -> last_data = new_node;
     
+    SEND ACK(new_node+1);
+    
     for (int i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
@@ -180,6 +182,10 @@ shift_receive_buffer (rel_t *r) {
     
     (r -> seqno)++;
     
+    // if after shifting the buffer we now have the next packet available too, shift the buffer again
+    if (r -> receive_ordering_buffer[0] != NULL) {
+        shift_receive_buffer(r);
+    }
 }
 
 
@@ -196,15 +202,17 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
     /* TODO */
     
-    if (n != pkt -> len) {
+    if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
+        debug("size_t n is different from pkt->len; this is an error packet, return");
         return;
     }
     
     
-    if (pkt -> len < 12) {
+    if (pkt->len < 12) {
         //pkt is an ACK
+        
     } else {
         //pkt is a data PACKET
         
