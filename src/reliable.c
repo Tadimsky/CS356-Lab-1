@@ -56,9 +56,9 @@ struct reliable_state {
     
     int window_size;
     // All packets with sequence number lower than ack_number have been recieved by the SENDER
-    int ackno;
+    uint32_t ackno;
     // The next seq_number the receiver is expecting. The lowest order number in the current window.
-    int seqno;
+    uint32_t seqno;
     
     //Array of size window that holds incomming packets so that they can be added to our linked list in order.
     packet_t* receive_ordering_buffer;
