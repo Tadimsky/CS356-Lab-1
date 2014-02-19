@@ -79,6 +79,23 @@ node_t *node_create(packet_t * new_packet) {
     return n;
 }
 
+/* Returns a packet with seqno = 0 (acts as a NULL packet)
+ */
+//packet_t * null_packet () {
+//    packet_t * p;
+//    p = xmalloc(sizeof(*p));
+//    memset (p, 0, sizeof (*p));
+//    p -> seqno = 0;
+//    return p;
+//}
+packet_t null_packet () {
+    packet_t p;
+//    p = xmalloc(sizeof(*p));
+//    memset (p, 0, sizeof (*p));
+    p.seqno = 0;
+    return p;
+}
+
 
 /* Creates a new reliable protocol session, returns NULL on failure.
  * Exactly one of c and ss should be NULL.  (ss is NULL when called
@@ -194,12 +211,12 @@ shift_receive_buffer (rel_t *r) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
     
-    r -> receive_ordering_buffer[r -> window_size - 1] = NULL;
+    r -> receive_ordering_buffer[r -> window_size - 1] = null_packet();
     
     (r -> seqno)++;
     
     // if after shifting the buffer we now have the next packet available too, shift the buffer again
-    if (r -> receive_ordering_buffer[0] != NULL) {
+    if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
         shift_receive_buffer(r);
     }
 }
@@ -229,15 +246,18 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (pkt->len < 12) {
         //pkt is an ACK
         
+        //handle sender buffer appropriately and return
+        
+        
     } else {
         //pkt is a data PACKET
         
-        int offset = (pkt -> seqno) - (r -> seqno);
+        int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
         
         r -> receive_ordering_buffer[offset] = *pkt;
         
-        if ((r -> receive_ordering_buffer[0]) != NULL) {
+        if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
         }
         
