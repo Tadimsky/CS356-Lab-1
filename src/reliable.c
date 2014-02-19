@@ -185,12 +185,14 @@ rel_demux (const struct config_common *cc,
  */
 void
 shift_receive_buffer (rel_t *r) {
-    
+    debug("About to shift buffer\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
-    r -> last_data -> next = new_node;
+    if (r->last_data != NULL) {
+    	r -> last_data -> next = new_node;
+    }
     r -> last_data = new_node;
-    
+
     // SEND ACK(new_node+1);
     // increment ack no
     // r->ackno = r->ackno + 1;
@@ -248,9 +250,8 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
         int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
-        debug("Offset: %d", offset);
+        debug("Offset: %d\n", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
-        
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
         }
@@ -271,7 +272,6 @@ rel_read (rel_t *s)
 	// drain the console
 	while (true) {
 		int bytes_read = conn_input(s->c, buffer, 500);
-		debug("Read: %d\n", bytes_read); // no more
 
 		if (bytes_read == 0) {
 			return;
