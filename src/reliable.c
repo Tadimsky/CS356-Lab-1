@@ -230,8 +230,13 @@ shift_receive_buffer (rel_t *r) {
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
+	pkt->len = ntohs(pkt->len);
+	pkt->ackno = ntohl(pkt->ackno);
+	pkt->seqno = ntohl(pkt->seqno);
+
+
     /* TODO */
-    
+    debug("Actual size: %d, Packet size: %d", n, pkt->len);
     if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
