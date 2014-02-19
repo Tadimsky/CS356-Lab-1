@@ -242,7 +242,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
         int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
-        debug("Offset: %d\n", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
@@ -310,8 +309,8 @@ void send_ack(rel_t *r) {
 void
 rel_output (rel_t *r)
 {
-    /* TODO */
-    
+	debug("Rel Output");
+
     if (conn_bufspace(r -> c) > (r -> last_data -> pkt -> len)) {
         conn_output(r -> c, r -> last_data -> pkt -> data, r -> last_data -> pkt -> len);
         send_ack(r);
