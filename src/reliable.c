@@ -59,6 +59,7 @@ struct reliable_state {
     node_t * last_data;
     
     int window_size;
+    
     // All packets with sequence number lower than ackno have been recieved by the SENDER
     uint32_t ackno;
     
@@ -326,6 +327,7 @@ rel_output (rel_t *r)
     if (conn_bufspace(r -> c) > (r -> last_data -> pkt -> len)) {
         conn_output(r -> c, r -> last_data -> pkt -> data, r -> last_data -> pkt -> len);
         //SEND ACK FOR THIS PACKET
+        send_ack(r);
     }
     
     return;
