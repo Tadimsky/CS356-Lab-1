@@ -236,7 +236,6 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
 
     /* TODO */
-    debug("Actual size: %d, Packet size: %d", n, pkt->len);
     if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
@@ -256,7 +255,7 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
         int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
-        
+        debug("Offset: %d", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
         
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
