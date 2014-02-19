@@ -29,15 +29,14 @@
 struct node {
     
     packet_t * pkt;
-    
     int time_sent; //update everytime we resend
     uint16_t request_attempts;
     
-//    bool ack_received;  //mark true when sender receives ACK from receiver
+    bool ack_received;  //mark true when sender receives ACK from receiver
     
     struct node * next;
     struct node ** prev;
-    
+
 };
 typedef struct node node_t;
 
@@ -71,7 +70,7 @@ struct reliable_state {
 rel_t *rel_list;
 
 
-node_t *node_create(packet_t * new_packet) {
+node_t * node_create(packet_t * new_packet) {
     node_t *n;
     n = xmalloc (sizeof (*n));
     
@@ -80,6 +79,7 @@ node_t *node_create(packet_t * new_packet) {
     
     return n;
 }
+
 
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
@@ -94,8 +94,7 @@ packet_t null_packet () {
  * Exactly one of c and ss should be NULL.  (ss is NULL when called
  * from rlib.c, while c is NULL when this function is called from
  * rel_demux.) */
-rel_t *
-rel_create (conn_t *c, const struct sockaddr_storage *ss,
+rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
             const struct config_common *cc)
 {
     rel_t *r;
@@ -131,8 +130,7 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     return r;
 }
 
-void
-rel_destroy (rel_t *r)
+void rel_destroy (rel_t *r)
 {
     if (r->next)
         r->next->prev = r->prev;
@@ -171,20 +169,19 @@ rel_destroy (rel_t *r)
  * ().  (Pass rel_create NULL for the conn_t, so it will know to
  * allocate a new connection.)
  */
-void
-rel_demux (const struct config_common *cc,
+void rel_demux (const struct config_common *cc,
            const struct sockaddr_storage *ss,
            packet_t *pkt, size_t len)
 {
     /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
+
 /* This function is called when the 0th index of the receive_ordering_buffer contains a packet, not NULL.
  * When this occurs, we move the 0th packet into the received_data_linked_list, move all elements of 
  * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
  */
-void
-shift_receive_buffer (rel_t *r) {
+void shift_receive_buffer (rel_t *r) {
     debug("About to shift buffer\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
@@ -220,15 +217,12 @@ shift_receive_buffer (rel_t *r) {
  n is the actual size where pkt -> len is what it should be.  
  A discrepancy would indicate some bits were or the packet is not properly formed. Thus we will discard it.
  */
-void
-rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
+void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
 
-
-    /* TODO */
     if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
@@ -236,12 +230,12 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         return;
     }
     
-    
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
         //handle sender buffer appropriately and return
         
+        /* TODO */
         
     } else {
         //pkt is a data PACKET
