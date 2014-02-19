@@ -49,18 +49,25 @@ struct reliable_state {
     /* Add your own data fields below this */
     
     node_t * current_node;
+    uint32_t * current_seqno;
     
-    uint32_t current_seqno;
+    node_t * received_data_linked_list;
+    node_t * last_data;
+    int window_size;
+    
+    //Array of size window that holds incomming packets so that they can be added to our linked list in order.
+    
+    packet_t* receive_ordering_buffer;
     
 };
 rel_t *rel_list;
 
 
-node_t *node_create(packet_t * pack) {
+node_t *node_create(packet_t * new_packet) {
     node_t *n;
     n = xmalloc (sizeof (*n));
     
-    n -> pack = pack;
+    n -> pack = new_packet;
     n -> request_attempts = 0;
     n -> ack_received = false;
     
@@ -77,7 +84,6 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
             const struct config_common *cc)
 {
     rel_t *r;
-    
     r = xmalloc (sizeof (*r));
     memset (r, 0, sizeof (*r));
     
@@ -100,9 +106,18 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     /* TODO */
     
+    /*
+    node_t *node;
+    node = node_create(NULL);
+    r->current_node = node;
+    //current_node is initialized as an empty node
+    */
     
+    r->window_size = (cc->window);
     
-    
+    packet_t buff[cc->window];
+    r->receive_ordering_buffer = buff;
+
     return r;
 }
 
@@ -136,31 +151,68 @@ rel_demux (const struct config_common *cc,
            const struct sockaddr_storage *ss,
            packet_t *pkt, size_t len)
 {
-    /* TODO */
-    
-    /*
-     if ss has sequence number 1, allocate a new conn_t using rel_create()
-     
-     
-     
-     
-     
-     */
-    
+    /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
+/*
+ Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  
+ If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  
+ If it has already been recieved, do nothing with it but send the ACK. If it has not been recieved, put it in its ordered place in the buffer and send the ACK.
+
+ n is the actual size where pkt -> len is what it should be.  
+ A discrepancy would indicate some bits were or the packet is not properly formed. Thus we will discard it.
+ */
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
+    /* RECEIVER SIDE */
     /* TODO */
+    
+    if (n != pkt -> len) {
+        //we have not received the full packet or it's an error packet
+        //ignore it and wait for the packet to come in its entirety
+        return;
+    }
+    
+    
+    if (pkt -> len < 12) {
+        //pkt is an ACK
+    } else {
+        //pkt is a data PACKET
+        
+        //add it to the window-buffer and send ACK
+        
+        //if receive_buffer[0] is full
+            //move receive_buffer[0] into data linked list
+            //shift receive_buffer entries forward
+        //else
+            //return
+    }
     
     
 }
 
+void
+shift_receive_buffer (rel_t *r) {
+    
+    node_t * new_node = node_create(receive_order_buffer[0]);
+    
+    r -> last_data -> next = new_node;
+    
+    for (int i = 0; i < r -> window_size - 2; i--) {
+        receive_order_buffer[i] = receive_order_buffer[i+1];
+    }
+    receive_order_buffer[r -> window_size - 1] = NULL;
+    
+}
 
+
+/*
+ Take information from standard input and create packets.  Will call some means of sending to the appropriate receiver.
+ */
 void
 rel_read (rel_t *s)
-{	
+{
 	char buffer[500];
 	// drain the console
 	while (true) {
@@ -172,13 +224,17 @@ rel_read (rel_t *s)
 		packet_t pkt;
 		int packet_size = 12;
 		if (bytes_read > 0) {
-			memcpy(pkt->data, buffer, bytes_read);
+			memcpy(pkt.data, buffer, bytes_read);
 			packet_size += bytes_read;
-			pkt->seqno = htons(1); // set the sequence number
+			pkt.seqno = htons(1); // set the sequence number
 		}
-		pkt->len = htons(packet_size);
-		pkt->ackno = htons(1); // the sequence number of the last packet received + 1
-		pkt->cksum = cksum(pkt, packet_size);
+		pkt.len = htons(packet_size);
+		pkt.ackno = htons(1); // the sequence number of the last packet received + 1
+		pkt.cksum = cksum((void*)&pkt, packet_size);
+
+		char lolz[packet_size];
+		print_pkt(&pkt, lolz, packet_size);
+		debug("%s", lolz);
 	}
 
 }
@@ -186,7 +242,11 @@ rel_read (rel_t *s)
 void
 rel_output (rel_t *r)
 {
+    /* RECEIVER SIDE */
     /* TODO */
+    
+    
+    
     
     
 }
