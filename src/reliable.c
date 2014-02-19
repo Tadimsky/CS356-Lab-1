@@ -205,8 +205,8 @@ shift_receive_buffer (rel_t *r) {
     
     
     
-    
-    for (int i = 0; i < r -> window_size - 2; i--) {
+    int i;
+    for (i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
     
