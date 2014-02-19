@@ -221,6 +221,7 @@ rel_read (rel_t *s)
 		if (bytes_read == 0) {
 			return;
 		}
+
 		packet_t pkt;
 		int packet_size = 12;
 		if (bytes_read > 0) {
