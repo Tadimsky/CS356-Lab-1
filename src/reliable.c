@@ -53,10 +53,10 @@ struct reliable_state {
     
     node_t * received_data_linked_list;
     node_t * last_data;
+    
     int window_size;
     
     //Array of size window that holds incomming packets so that they can be added to our linked list in order.
-    
     packet_t* receive_ordering_buffer;
     
 };
@@ -113,7 +113,7 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     //current_node is initialized as an empty node
     */
     
-    r->window_size = (cc->window);
+    r->window_size = cc->window;
     
     packet_t buff[cc->window];
     r->receive_ordering_buffer = buff;
@@ -195,14 +195,15 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 shift_receive_buffer (rel_t *r) {
     
-    node_t * new_node = node_create(receive_order_buffer[0]);
+    node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
     r -> last_data -> next = new_node;
     
     for (int i = 0; i < r -> window_size - 2; i--) {
-        receive_order_buffer[i] = receive_order_buffer[i+1];
+        r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
-    receive_order_buffer[r -> window_size - 1] = NULL;
+    
+    r -> receive_ordering_buffer[r -> window_size - 1] = NULL packet;
     
 }
 
