@@ -27,7 +27,7 @@
  */
 struct node {
     
-    packet_t * pack;
+    packet_t * pkt;
     
     int time_sent; //update everytime we resend
     uint16_t request_attempts;
@@ -76,7 +76,7 @@ node_t *node_create(packet_t * new_packet) {
     node_t *n;
     n = xmalloc (sizeof (*n));
     
-    n -> pack = new_packet;
+    n -> pkt = new_packet;
     n -> request_attempts = 0;
     n -> ack_received = false;
     
@@ -213,6 +213,10 @@ shift_receive_buffer (rel_t *r) {
     // increment ack no
     // r->ackno = r->ackno + 1;
     
+    
+    
+    
+    
     for (int i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
@@ -320,8 +324,7 @@ rel_output (rel_t *r)
     /* RECEIVER SIDE */
     /* TODO */
     
-    
-    
+    packet_t * pkt = r -> last_data -> pkt;
     
     
 }
