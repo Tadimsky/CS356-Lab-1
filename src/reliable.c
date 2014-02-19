@@ -47,10 +47,11 @@ struct reliable_state {
     conn_t *c;			/* This is the connection object */
     
     /* Add your own data fields below this */
-    
-//    node_t * current_node;
-    
+
+    // The final data structure we want.
     node_t * received_data_linked_list;
+    
+    // Pointer to slot where the most recent data was added.
     node_t * last_data;
     
     int window_size;
@@ -138,6 +139,21 @@ rel_destroy (rel_t *r)
     /* Free any other allocated memory here */
     
     /* TODO */
+    rel_t* current = r;
+    while (current != NULL) {
+        rel_t* next = r->next;
+        free(current);
+        current = next;
+    }
+    
+    /*
+     Todo:
+     
+     Delete:
+     node_t * received_data_linked_list;
+     node_t * last_data;
+     packet_t* receive_ordering_buffer;
+     */
     
     
     
