@@ -205,11 +205,13 @@ shift_receive_buffer (rel_t *r) {
     
     r -> last_data -> next = new_node;
     
-    for (int i = 0; i < r -> window_size - 2; i--) {
+    int i;
+    for (i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
     
-    r -> receive_ordering_buffer[r -> window_size - 1] = NULL packet;
+    packet_t t;
+    r -> receive_ordering_buffer[r -> window_size - 1] = t;
     
 }
 
@@ -224,7 +226,8 @@ rel_read (rel_t *s)
 	// drain the console
 	while (true) {
 		int bytes_read = conn_input(s->c, buffer, 500);
-		// no more
+		debug("Read: %d\n", bytes_read); // no more
+
 		if (bytes_read == 0) {
 			return;
 		}
@@ -234,15 +237,18 @@ rel_read (rel_t *s)
 		if (bytes_read > 0) {
 			memcpy(pkt.data, buffer, bytes_read);
 			packet_size += bytes_read;
-			pkt.seqno = htons(1); // set the sequence number
+
 		}
+		pkt.seqno = htonl(s->seqno); // set the sequence number
+		s->seqno = s->seqno + 1;
 		pkt.len = htons(packet_size);
-		pkt.ackno = htons(1); // the sequence number of the last packet received + 1
+		pkt.ackno = htonl(s->ackno); // the sequence number of the last packet received + 1
 		pkt.cksum = cksum((void*)&pkt, packet_size);
 
-		char lolz[packet_size];
-		print_pkt(&pkt, lolz, packet_size);
-		debug("%s", lolz);
+		conn_sendpkt(s->c, &pkt, packet_size);
+		if (bytes_read == -1) {
+			return;
+		}
 	}
 
 }
