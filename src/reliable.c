@@ -18,6 +18,7 @@
 
 #define debug(...)   fprintf(stderr, __VA_ARGS__)
 #define DATA_PACKET_SIZE 12
+#define ACK_PACKET_SIZE 8
 
 #define ACK_START 1
 #define SEQ_START 1
@@ -317,6 +318,16 @@ rel_read (rel_t *s)
 		}
 	}
 
+}
+
+
+void send_ack(rel_t *r) {
+	packet_t pkt;
+	pkt.len = htons(ACK_PACKET_SIZE);
+	pkt.ackno = htonl(r->ackno);
+	pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
+
+	conn_sendpkt(r->c, &pkt, ACK_PACKET_SIZE);
 }
 
 void
