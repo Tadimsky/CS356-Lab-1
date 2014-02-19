@@ -311,6 +311,7 @@ rel_read (rel_t *s)
 void send_ack(rel_t *r) {
 	packet_t pkt;
 	pkt.len = htons(ACK_PACKET_SIZE);
+	r->ackno = r->ackno + 1;
 	pkt.ackno = htonl(r->ackno);
 	pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
 
