@@ -160,6 +160,28 @@ rel_demux (const struct config_common *cc,
     /* LAB ASSIGNMENT SAYS NOT TO TOUCH rel_demux() */
 }
 
+/* This function is called when the 0th index of the receive_ordering_buffer contains a packet, not NULL.
+ * When this occurs, we move the 0th packet into the received_data_linked_list, move all elements of 
+ * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
+ */
+void
+shift_receive_buffer (rel_t *r) {
+    
+    node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
+    
+    r -> last_data -> next = new_node;
+    
+    for (int i = 0; i < r -> window_size - 2; i--) {
+        r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
+    }
+    
+    r -> receive_ordering_buffer[r -> window_size - 1] = NULL;
+    
+    (r -> seqno)++;
+    
+}
+
+
 /*
  Examine incomming packets. If the packet is an ACK then remove the corresponding packet from our send buffer.  
  If it is data, see if we have already received that data (if it is a lower seq number than the lowest of our current frame, or if it is already in our recieved buffer).  
@@ -186,35 +208,18 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     } else {
         //pkt is a data PACKET
         
-        //add it to the window-buffer
+        int offset = (pkt -> seqno) - (r -> seqno);
+        // offset tells where in the receive_ordering_buffer this packet falls
         
-        int * offset = (pkt -> seqno) - (r -> seqno);
+        r -> receive_ordering_buffer[offset] = *pkt;
         
-        r -> receive_ordering_buffer[offset] = pkt;
+        if ((r -> receive_ordering_buffer[0]) != NULL) {
+            shift_receive_buffer(r);
+        }
         
-        //if receive_buffer[0] is full
-            //move receive_buffer[0] into data linked list
-            //shift receive_buffer entries forward
-        //else
-            //return
     }
     
-    
-}
-
-void
-shift_receive_buffer (rel_t *r) {
-    
-    node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
-    
-    r -> last_data -> next = new_node;
-    
-    for (int i = 0; i < r -> window_size - 2; i--) {
-        r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
-    }
-    
-    r -> receive_ordering_buffer[r -> window_size - 1] = NULL;
-    
+    return;
 }
 
 
