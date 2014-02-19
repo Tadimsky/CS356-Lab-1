@@ -321,12 +321,14 @@ rel_read (rel_t *s)
 void
 rel_output (rel_t *r)
 {
-    /* RECEIVER SIDE */
     /* TODO */
     
-    packet_t * pkt = r -> last_data -> pkt;
+    if (conn_bufspace(r -> c) > (r -> last_data -> pkt -> len)) {
+        conn_output(r -> c, r -> last_data -> pkt -> data, r -> last_data -> pkt -> len);
+        //SEND ACK FOR THIS PACKET
+    }
     
-    
+    return;
 }
 
 void
