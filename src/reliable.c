@@ -48,16 +48,16 @@ struct reliable_state {
     
     /* Add your own data fields below this */
     
-    node_t * current_node;
-    uint32_t * current_seqno;
+//    node_t * current_node;
     
     node_t * received_data_linked_list;
     node_t * last_data;
     
     int window_size;
-    // All packets with sequence number lower than ack_number have been recieved by the SENDER
+    // All packets with sequence number lower than ackno have been recieved by the SENDER
     uint32_t ackno;
-    // The next seq_number the receiver is expecting. The lowest order number in the current window.
+    
+    // The next seqno the receiver is expecting. The lowest order number in the current window.
     uint32_t seqno;
     
     //Array of size window that holds incomming packets so that they can be added to our linked list in order.
@@ -170,6 +170,7 @@ shift_receive_buffer (rel_t *r) {
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
     r -> last_data -> next = new_node;
+    r -> last_data = new_node;
     
     for (int i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
@@ -193,7 +194,6 @@ shift_receive_buffer (rel_t *r) {
 void
 rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-    /* RECEIVER SIDE */
     /* TODO */
     
     if (n != pkt -> len) {
