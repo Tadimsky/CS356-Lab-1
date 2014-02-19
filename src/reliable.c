@@ -121,16 +121,9 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     /* TODO */
     
-    /*
-    node_t *node;
-    node = node_create(NULL);
-    r->current_node = node;
-    //current_node is initialized as an empty node
-    */
-    
     r->window_size = cc->window;
     
-    packet_t buff[cc->window];
+    packet_t * buff = xmalloc(sizeof(packet_t) * cc->window);
     r->receive_ordering_buffer = buff;
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
