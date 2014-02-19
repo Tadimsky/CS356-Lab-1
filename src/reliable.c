@@ -275,6 +275,8 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
         //handle sender buffer appropriately and return
         
+        //take this ack out of the sender buffer, can now continue onto next packet
+        
         /* TODO */
         
     } else {
@@ -302,6 +304,9 @@ rel_read (rel_t *r)
 	char buffer[500];
 	// drain the console
 	while (true) {
+        
+        //if there's no space in the buffer, return (cant make more packets)
+        
 		int bytes_read = conn_input(r->c, buffer, 500);
 
 		if (bytes_read == 0) {
@@ -322,6 +327,7 @@ rel_read (rel_t *r)
 		pkt.cksum = cksum((void*)&pkt, packet_size);
 
 		conn_sendpkt(r->c, &pkt, packet_size);
+        //put this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
 
 		// add the packet to the send queue so that
 		// we can track what has been received by the
