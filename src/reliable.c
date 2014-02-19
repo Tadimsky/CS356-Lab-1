@@ -188,7 +188,7 @@ shift_receive_buffer (rel_t *r) {
     r -> last_data -> next = new_node;
     r -> last_data = new_node;
     
-    SEND ACK(new_node+1);
+    //SEND ACK(new_node+1);
     
     for (int i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
