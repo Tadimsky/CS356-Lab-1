@@ -236,12 +236,12 @@ void rel_demux (const struct config_common *cc,
 void shift_receive_buffer (rel_t *r) {
     debug("---Entering shift_receive_buffer---\n");
     
-    if (r -> receive_ordering_buffer[0].seqno == null_packet().seqno){
+    if (r->receive_ordering_buffer[0].seqno == null_packet().seqno){
         return;
     }
     
     int i;
-    for (i =0; i< r->window_size -2 ; i++){
+    for (i = 0; i< r->window_size - 1; i++){
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
     }
     // If the previous operation results in a packet in index 0 we have the packet we are
@@ -343,7 +343,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         debug("packet in window slot: %d \n", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
-            shift_receive_buffer(r);
+            // shift_receive_buffer(r);
         }
         rel_output(r);
         
@@ -422,11 +422,23 @@ void
 rel_output (rel_t *r)
 {
 	debug("---Entering rel_output---\n");
-    if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
-        conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
-        send_ack(r);
-    }
-    
+	int i = 0;
+	for (i = 0; i < r->window_size; i++) {
+		packet_t f = r->receive_ordering_buffer[i];
+		if (f.ackno == null_packet().ackno) {
+			// first out of order packet encountered
+			break;
+		}
+		else {
+			// if we have enough space in the buffer
+			if (conn_bufspace(r->c) > (f.len)) {
+				conn_output(r->c, f.data, f.len);
+				send_ack(r);
+				// shift_receive_buffer(r);
+			}
+		}
+	}
+
     return;
 }
 
@@ -440,14 +452,15 @@ rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
+	/*
     rel_t* r = rel_list;
     
     while (r != NULL){
     
         unacked_t null_node = null_unacked();
-        
+
         //Temporary constants TODO: replace them with runtime variables
-        int sending_window_size =1;
+        int sending_window_size = r->window_size;
         int resend_frequency = 5;
         int max_total_resend_time = resend_frequency * 10;
         
@@ -466,6 +479,7 @@ rel_timer ()
         }
         r = r->next;
     }
+    */
 }
 
 
