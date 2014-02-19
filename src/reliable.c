@@ -17,6 +17,10 @@
 #include "rlib.h"
 
 #define debug(...)   fprintf(stderr, __VA_ARGS__)
+#define DATA_PACKET_SIZE 12
+
+#define ACK_START 1
+#define SEQ_START 1
 
 /*
  Structure we use for tracking packets to be sent
@@ -122,8 +126,8 @@ rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     packet_t buff[cc->window];
     r->receive_ordering_buffer = buff;
-    r->seqno = 1;
-    r->ackno = 1;
+    r->seqno = SEQ_START;
+    r->ackno = ACK_START;
 
     return r;
 }
@@ -189,14 +193,14 @@ shift_receive_buffer (rel_t *r) {
     r -> last_data = new_node;
     
     // SEND ACK(new_node+1);
+    // increment ack no
+    // r->ackno = r->ackno + 1;
     
     for (int i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
     }
     
     r -> receive_ordering_buffer[r -> window_size - 1] = NULL;
-    
-    (r -> seqno)++;
     
     // if after shifting the buffer we now have the next packet available too, shift the buffer again
     if (r -> receive_ordering_buffer[0] != NULL) {
@@ -226,7 +230,7 @@ rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     }
     
     
-    if (pkt->len < 12) {
+    if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
     } else {
@@ -264,7 +268,7 @@ rel_read (rel_t *s)
 		}
 
 		packet_t pkt;
-		int packet_size = 12;
+		int packet_size = DATA_PACKET_SIZE;
 		if (bytes_read > 0) {
 			memcpy(pkt.data, buffer, bytes_read);
 			packet_size += bytes_read;
@@ -277,6 +281,12 @@ rel_read (rel_t *s)
 		pkt.cksum = cksum((void*)&pkt, packet_size);
 
 		conn_sendpkt(s->c, &pkt, packet_size);
+
+		// add the packet to the send queue so that
+		// we can track what has been received by the
+		// receiver.
+
+
 		if (bytes_read == -1) {
 			return;
 		}
