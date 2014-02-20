@@ -213,6 +213,7 @@ void shift_receive_buffer (rel_t *r) {
     // r->ackno = r->ackno + 1;
     
     
+    
     int i;
     for (i = 0; i < r -> window_size - 2; i--) {
         r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
@@ -262,6 +263,7 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
+    
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
@@ -300,9 +302,10 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
     } else {
         //pkt is a data PACKET
-        
+        debug("received Data packet");
         int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
+        debug("packet in window slot: %d", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
