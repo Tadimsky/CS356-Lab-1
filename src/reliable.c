@@ -51,7 +51,8 @@ node_t * node_create(packet_t * new_packet) {
 }
 
 
-/* Returns a packet with seqno = 0 (acts as a NULL packet)
+/* 
+  Returns a packet with seqno = 0 (acts as a NULL packet)
  */
 packet_t null_packet () {
     packet_t p;
@@ -234,13 +235,27 @@ void shift_receive_buffer (rel_t *r) {
 }
 
 
-
+/**
+  Removes the first packet from the send window. Shifts everything down by one in order to free up space at the end of the send window so that a new packet 
+  can be inserted and sent.
+*/
 void shift_send_buffer (rel_t *r) {
     debug("---Entering shift_send_buffer---\n");
     for (int i = 0; i < r->window_size - 1; i++) {
       r->send_ordering_buffer[i] = r->send_ordering_buffer[i + 1];      
     }
     r->send_ordering_buffer[r->window_size - 1] = null_packet();    
+}
+
+
+void print_window(packet_t * window, size_t window_size) {
+  debug("Printing out window: \n");
+  debug("--------------------");
+  for (int i = 0; i < window_size; i++) {
+    packet_t cur = window[i];
+    // print packet cur
+  }
+  debug("--------------------");
 }
 
 
@@ -254,7 +269,7 @@ void shift_send_buffer (rel_t *r) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-    debug("---Entering rel_recvpkt---\n");
+  debug("---Entering rel_recvpkt---\n");
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
@@ -313,8 +328,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         rel_output(r);
         
     }
-    
-    return;
 }
 
 
