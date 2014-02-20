@@ -310,7 +310,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // the ackno that was sent to us should be one larger than the last ack received on the sender side
         if (pkt->ackno != r->last_ack_received + 1) {
           debug("FATAL ERROR: ackno is not in order");
-          exit();
+          exit(1);
         }
 
         uint32_t ackno = pkt->ackno;
@@ -320,7 +320,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // one less than this is the packet that was just received.
         if (ackno != ntohl(r->send_ordering_buffer[0].seqno) + 1) {
           debug("FATAL ERROR: ackno does not correspond to the first packet in the send window\n");
-          exit();
+          exit(1);
         }
 
         // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
