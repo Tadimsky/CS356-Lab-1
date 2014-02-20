@@ -124,8 +124,10 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->c = c;
     r->next = rel_list;
     r->prev = &rel_list;
-    if (rel_list)
-        rel_list->prev = &r->next;
+    if (rel_list) {
+      rel_list->prev = &r->next;
+    }
+
     rel_list = r;
     
     /* Do any other initialization you need here */
@@ -136,11 +138,18 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     packet_t * receive_buff = xmalloc(sizeof(packet_t) * cc->window);
     r->receive_ordering_buffer = receive_buff;
-//    uint32_t * send_buff = xmalloc(sizeof(uint32_t) * cc->window);
-//    r->send_ordering_buffer = send_buff;
-    r->send_ordering_buffer = receive_buff;
+
+    packet_t * send_buff = xmalloc(sizeof(packet_t) * cc->window);
+    r->send_ordering_buffer = send_buff;
+
+    for (int i = 0; i < cc->window; i++) {
+      r->receive_ordering_buffer[i] = null_packet();
+      r->send_ordering_buffer[i] = null_packet();
+    }
+
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
+    r->last_ack_received = ACK_START;
     
     packet_t new_packet = null_packet();
     node_t * first_node = node_create(&new_packet);
@@ -339,8 +348,7 @@ rel_read (rel_t *r)
 			packet_size += bytes_read;
 
 		}
-		pkt.seqno = htonl(r->seqno); // set the sequence number
-		r->seqno = r->seqno + 1;
+		pkt.seqno = htonl(r->seqno); // set the sequence number    
 		pkt.len = htons(packet_size);
 		pkt.ackno = htonl(r->ackno); // the sequence number of the last packet received + 1
 		pkt.cksum = cksum((void*)&pkt, packet_size);		
@@ -352,6 +360,9 @@ rel_read (rel_t *r)
          */
     
     conn_sendpkt(r->c, &pkt, packet_size);
+
+    // increment the sequence number for next time
+    r->seqno = r->seqno + 1;
 
 		if (bytes_read == -1) {
 			return;
