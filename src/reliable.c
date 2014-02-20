@@ -239,6 +239,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     }
     
     debug("received packet of len: %d\n", pkt->len);
+    debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
     
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
@@ -273,7 +274,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     else {
         //pkt is a data PACKET
         debug("received Data packet\n");
-        debug("packet contents: %s\n", pkt->data);
+//        debug("packet contents: %s\n", pkt->data);
         int offset = (pkt -> seqno) - (r -> ackno);
         
         // offset tells where in the receive_ordering_buffer this packet falls
@@ -369,7 +370,7 @@ rel_output (rel_t *r)
 		else {
 			// if we have enough space in the buffer
 			if (conn_bufspace(r->c) > (f.len)) {
-				conn_output(r->c, f.data, f.len);
+				conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);
 				send_ack(r);
 				// shift_receive_buffer(r);
 			}
