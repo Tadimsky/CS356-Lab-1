@@ -23,39 +23,11 @@
 #define ACK_START 1
 #define SEQ_START 1
 
-/*
- Structure we use for tracking packets to be sent
- */
-struct node {
-    
-    packet_t * pkt;
-    int time_sent; //update everytime we resend
-    uint16_t request_attempts;
-    
-    bool ack_received;  //mark true when sender receives ACK from receiver
-    
-    struct node * next;
-    struct node ** prev;
-
-};
-typedef struct node node_t;
-
-node_t * node_create(packet_t * new_packet) {
-    node_t *n;
-    n = xmalloc (sizeof (*n));
-    
-    n -> pkt = new_packet;
-    n -> request_attempts = 0;
-    
-    return n;
-}
-
 struct unacked_packet_node {
     int time_since_last_send;
     packet_t packet;
 };
 typedef struct unacked_packet_node unacked_t;
-
 
 unacked_t null_unacked() {
     unacked_t u;
@@ -74,7 +46,6 @@ packet_t null_packet () {
     return p;
 }
 
-
 struct reliable_state {
     rel_t *next;			/* Linked list for traversing all connections */
     rel_t **prev;
@@ -82,18 +53,6 @@ struct reliable_state {
     conn_t *c;			/* This is the connection object */
     
     /* Add your own data fields below this */
-
-    // The final data structure we want.
-    node_t * received_data_linked_list;
-    
-    // Pointer to slot where the most recent data was received.
-    node_t * last_data_received;
-    
-//    // Data structure with all sent packets
-//    node_t * sent_data_linked_list;
-    
-//    // Pointer to the last sent packet node
-//    node_t * last_data_sent;
     
     int window_size;
     
@@ -169,16 +128,6 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
     r->last_ack_received = ACK_START;
-    
-    packet_t new_packet = null_packet();
-    node_t * first_node = node_create(&new_packet);
-    r->received_data_linked_list = first_node;
-    r->last_data_received = first_node;
-//    r->sent_data_linked_list = first_node;
-//    r->last_data_sent = first_node;
-
-    debug("this should be 0: %d \n", r->last_data_received->pkt->seqno);
-    
     return r;
 }
 
@@ -199,18 +148,6 @@ void rel_destroy (rel_t *r)
         free(current);
         current = next;
     }
-    
-    /*
-     Todo:
-     
-     Delete:
-     node_t * received_data_linked_list;
-     node_t * last_data;
-     packet_t* receive_ordering_buffer;
-     */
-    
-    
-    
 }
 
 
