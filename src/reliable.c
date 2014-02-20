@@ -203,7 +203,7 @@ void rel_demux (const struct config_common *cc,
  * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
  */
 void shift_receive_buffer (rel_t *r) {
-    debug("Entering rshift_receive_buffer\n");
+    debug("Entering shift_receive_buffer\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
     if (r->last_data_received != NULL) {
@@ -322,6 +322,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         //pkt is a data PACKET
         debug("received Data packet\n");
         int offset = (pkt -> seqno) - (r -> ackno);
+        
         // offset tells where in the receive_ordering_buffer this packet falls
         debug("packet in window slot: %d \n", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
@@ -421,7 +422,7 @@ rel_output (rel_t *r)
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
         conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
-        debug("sent ACKNO %d \n", r -> last_data_received -> pkt -> ackno);
+        debug("sent ACKNO %d \n", r -> last_data_received -> pkt -> seqno);
     }
     
     return;
