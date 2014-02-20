@@ -297,7 +297,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // the ackno that was sent to us should be one larger than the last ack received on the sender side
         if (pkt->ackno != r->last_ack_received + 1) {
           debug("FATAL ERROR: ackno is not in order");
-          die():
+          die();
         }
 
         uint32_t ackno = pkt->ackno;
