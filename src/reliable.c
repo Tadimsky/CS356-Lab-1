@@ -293,7 +293,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
                 
                 //this inner if-statement is to check if the ack we get is for a packet that's not the next sequential packet
                 if (i > 0) {
-                    debug("received ack for a packet that shouldn't be acked yet");
+                    debug("received ack for a packet that shouldn't be acked yet \n");
                 }
                 
                 r -> send_ordering_buffer[i] = null_packet();
@@ -318,6 +318,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         }
         
     }
+    debug("end of rel_recvpkt function \n");
     
     return;
 }
