@@ -294,23 +294,24 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
         int i;
         //check each frame of the send_buffer (although it should really only ever be the 0th index)
-        for (i = 0; i < r -> window_size; i++) {
+//        for (i = 0; i < r -> window_size + 1; i++) {
+        
+            debug("in the for loop (dont forget to remove incorrect +1 \n ");
             //if ackno we've just received = seqno of the sent packet + 1, server has received the packet and we can eliminate it from the send buffer
-            if (r -> send_ordering_buffer[i].seqno == ackno - 1) {
+            if (r -> send_ordering_buffer[0].seqno == ackno - 1) {
                 
-                //this inner if-statement is to check if the ack we get is for a packet that's not the next sequential packet
-                if (i > 0) {
-                    debug("received ack for a packet that shouldn't be acked yet \n");
-                }
+//                //this inner if-statement is to check if the ack we get is for a packet that's not the next sequential packet
+//                if (i > 0) {
+//                    debug("received ack for a packet that shouldn't be acked yet \n");
+//                }
                 
-                debug("about to shift send_buffer \n");
-                r -> send_ordering_buffer[i] = null_packet();
-                shift_send_buffer(r, i);
+                r -> send_ordering_buffer[0] = null_packet();
+                shift_send_buffer(r, 0);
                 
                 //increment ackno so that sender may send next packet
                 (r -> ackno)++;
                 
-            }
+//            }
         }
         
         
