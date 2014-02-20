@@ -245,6 +245,8 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
 //    }
 //    r -> last_data_sent = new_node;
     
+    debug("shifting send_buffer \n");
+    
     int i;
     for (i = empty_cell; i < r -> window_size - 2; i--) {
         r -> send_ordering_buffer[i] = r -> send_ordering_buffer[i+1];
@@ -255,6 +257,7 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
 //    if (r -> send_ordering_buffer[0].seqno != null_packet().seqno) {
 //        shift_send_buffer(r);
 //    }
+    
     return;
 }
 
@@ -284,7 +287,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
-        
         uint32_t ackno = pkt->ackno;
 
         debug("received ACKNO %d \n", ackno);
@@ -300,11 +302,16 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
                     debug("received ack for a packet that shouldn't be acked yet \n");
                 }
                 
+                debug("about to shift send_buffer \n");
                 r -> send_ordering_buffer[i] = null_packet();
                 shift_send_buffer(r, i);
                 
+                //increment ackno so that sender may send next packet
+                (r -> ackno)++;
+                
             }
         }
+        
         
         //take this ack out of the sender buffer, can now continue onto next packet
         
@@ -323,8 +330,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         rel_output(r);
         
     }
-    
-    debug("end of rel_recvpkt function \n");
     
     return;
 }
@@ -389,6 +394,7 @@ rel_read (rel_t *r)
 			return;
 		}
 	}
+    return;
 
 }
 
@@ -401,6 +407,7 @@ void send_ack(rel_t *r) {
 	pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
 
 	conn_sendpkt(r->c, &pkt, ACK_PACKET_SIZE);
+    return;
 }
 
 void
