@@ -145,6 +145,8 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 //    r->sent_data_linked_list = first_node;
 //    r->last_data_sent = first_node;
 
+    debug("this should be 0: %d \n", r->last_data_received->pkt->seqno);
+    
     return r;
 }
 
@@ -208,6 +210,10 @@ void shift_receive_buffer (rel_t *r) {
     }
     r -> last_data_received = new_node;
 
+    
+    
+    debug("last data received seqno = %d \n", r->last_data_received->pkt->seqno);
+    
     // SEND ACK(new_node+1);
     // increment ack no
     // r->ackno = r->ackno + 1;
@@ -302,10 +308,10 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
     } else {
         //pkt is a data PACKET
-        debug("received Data packet");
+        debug("received Data packet\n");
         int offset = (pkt -> seqno) - (r -> ackno);
         // offset tells where in the receive_ordering_buffer this packet falls
-        debug("packet in window slot: %d", offset);
+        debug("packet in window slot: %d \n", offset);
         r -> receive_ordering_buffer[offset] = *pkt;
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
