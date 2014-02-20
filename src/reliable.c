@@ -152,7 +152,7 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
 void rel_destroy (rel_t *r)
 {
-    debug("Entering rel_destroy\n");
+    debug("---Entering rel_destroy---\n");
     if (r->next)
         r->next->prev = r->prev;
     *r->prev = r->next;
@@ -203,7 +203,7 @@ void rel_demux (const struct config_common *cc,
  * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
  */
 void shift_receive_buffer (rel_t *r) {
-    debug("Entering shift_receive_buffer\n");
+    debug("---Entering shift_receive_buffer---\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
     if (r->last_data_received != NULL) {
@@ -238,7 +238,7 @@ void shift_receive_buffer (rel_t *r) {
 
 
 void shift_send_buffer (rel_t *r, int empty_cell) {
-    debug("Entering shift_send_buffer\n");
+    debug("---Entering shift_send_buffer---\n");
 //    node_t * new_node = node_create(&r -> send_ordering_buffer[0]);
     
 //    if (r->last_data_sent != NULL) {
@@ -273,7 +273,7 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-    debug("Entering rel_recvpkt\n");
+    debug("---Entering rel_recvpkt---\n");
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
@@ -285,6 +285,8 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         return;
     }
     
+    debug("received packet of len: %d\n", pkt -> len);
+    
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
@@ -294,9 +296,9 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
         int i;
         //check each frame of the send_buffer (although it should really only ever be the 0th index)
-        for (i = 0; i < r -> window_size + 1; i++) {
+        debug("send_ordering_buffer content: %s\n", r ->send_ordering_buffer[0].data);
+        for (i = 0; i < r -> window_size; i++) {
             
-            debug("in the for loop (dont forget to remove incorrect +1 \n ");
             //if ackno we've just received = seqno of the sent packet + 1, server has received the packet and we can eliminate it from the send buffer
             if (r -> send_ordering_buffer[i].seqno == ackno - 1) {
                 
@@ -322,6 +324,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     } else {
         //pkt is a data PACKET
         debug("received Data packet\n");
+        debug("packet contents: %s\n", pkt->data);
         int offset = (pkt -> seqno) - (r -> ackno);
         
         // offset tells where in the receive_ordering_buffer this packet falls
@@ -344,7 +347,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *r)
 {
-    debug("Entering rel_read\n");
+    debug("---Entering rel_read---\n");
 	char buffer[500];
 	// drain the console
 	while (true) {
@@ -404,7 +407,7 @@ rel_read (rel_t *r)
 
 
 void send_ack(rel_t *r) {
-    debug("Entering send_ack\n");
+    debug("---Entering send_ack---\n");
 	packet_t pkt;
 	pkt.len = htons(ACK_PACKET_SIZE);
 	r->ackno = r->ackno + 1;
@@ -418,8 +421,8 @@ void send_ack(rel_t *r) {
 void
 rel_output (rel_t *r)
 {
-	debug("Entering rel_output\n");
-
+	debug("---Entering rel_output---\n");
+    debug("DEBUG: Data Packet contents: %s\n", r -> last_data_received -> pkt -> data);
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
         conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
