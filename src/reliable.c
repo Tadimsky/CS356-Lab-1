@@ -152,6 +152,7 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
 void rel_destroy (rel_t *r)
 {
+    debug("Entering rel_destroy\n");
     if (r->next)
         r->next->prev = r->prev;
     *r->prev = r->next;
@@ -202,7 +203,7 @@ void rel_demux (const struct config_common *cc,
  * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
  */
 void shift_receive_buffer (rel_t *r) {
-    debug("About to shift receive buffer\n");
+    debug("Entering rshift_receive_buffer\n");
     node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
     if (r->last_data_received != NULL) {
@@ -237,7 +238,7 @@ void shift_receive_buffer (rel_t *r) {
 
 
 void shift_send_buffer (rel_t *r, int empty_cell) {
-    debug("About to shift send buffer\n");
+    debug("Entering shift_send_buffer\n");
 //    node_t * new_node = node_create(&r -> send_ordering_buffer[0]);
     
 //    if (r->last_data_sent != NULL) {
@@ -269,7 +270,7 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-    
+    debug("Entering rel_recvpkt\n");
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
@@ -336,6 +337,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *r)
 {
+    debug("Entering rel_read\n");
 	char buffer[500];
 	// drain the console
 	while (true) {
@@ -394,6 +396,7 @@ rel_read (rel_t *r)
 
 
 void send_ack(rel_t *r) {
+    debug("Entering send_ack\n");
 	packet_t pkt;
 	pkt.len = htons(ACK_PACKET_SIZE);
 	r->ackno = r->ackno + 1;
@@ -406,7 +409,7 @@ void send_ack(rel_t *r) {
 void
 rel_output (rel_t *r)
 {
-	debug("Rel Output \n");
+	debug("Entering rel_output\n");
 
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
         debug("in IF statement of rel_output \n");
