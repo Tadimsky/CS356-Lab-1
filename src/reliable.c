@@ -402,9 +402,10 @@ void send_ack(rel_t *r) {
 void
 rel_output (rel_t *r)
 {
-	debug("Rel Output");
+	debug("Rel Output \n");
 
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
+        debug("in IF statement of rel_output \n");
         conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
     }
