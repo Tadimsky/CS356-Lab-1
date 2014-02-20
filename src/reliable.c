@@ -160,8 +160,8 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
     packet_t * send_buff = xmalloc(sizeof(packet_t) * cc->window);
     r->send_ordering_buffer = send_buff;
-
-    for (int i = 0; i < cc->window; i++) {
+    int i;
+    for (i = 0; i < cc->window; i++) {
       r->receive_ordering_buffer[i] = null_packet();
       r->send_ordering_buffer[i] = null_packet();
     }
@@ -259,7 +259,8 @@ void shift_receive_buffer (rel_t *r) {
 */
 void shift_send_buffer (rel_t *r) {
     debug("---Entering shift_send_buffer---\n");
-    for (int i = 0; i < r->window_size - 1; i++) {
+    int i;
+    for (i = 0; i < r->window_size - 1; i++) {
       r->send_ordering_buffer[i] = r->send_ordering_buffer[i + 1];      
     }
     r->send_ordering_buffer[r->window_size - 1] = null_packet();    
@@ -269,7 +270,8 @@ void shift_send_buffer (rel_t *r) {
 void print_window(packet_t * window, size_t window_size) {
   debug("Printing out window: \n");
   debug("--------------------");
-  for (int i = 0; i < window_size; i++) {
+  int i;
+  for (i = 0; i < window_size; i++) {
     packet_t cur = window[i];
     // print packet cur
   }
