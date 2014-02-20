@@ -284,7 +284,11 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
         
+        
         uint32_t ackno = pkt->ackno;
+
+        debug("received ACKNO %d \n", ackno);
+
         int i;
         //check each frame of the send_buffer (although it should really only ever be the 0th index)
         for (i = 0; i < r -> window_size; i++) {
