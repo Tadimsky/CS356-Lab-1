@@ -422,7 +422,6 @@ rel_output (rel_t *r)
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
         conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
-        debug("sent ACKNO %d \n", r -> last_data_received -> pkt -> seqno);
     }
     
     return;
