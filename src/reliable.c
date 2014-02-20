@@ -316,8 +316,10 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
             shift_receive_buffer(r);
         }
+        rel_output(r);
         
     }
+    
     debug("end of rel_recvpkt function \n");
     
     return;
