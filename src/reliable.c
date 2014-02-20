@@ -202,37 +202,22 @@ void rel_demux (const struct config_common *cc,
 }
 
 
-/* This function is called when the 0th index of the receive_ordering_buffer contains a packet, not NULL.
- * When this occurs, we move the 0th packet into the received_data_linked_list, move all elements of 
- * receive_ordering_buffer forward by one index, and update the next expected seqno in reliable_state.
+/* 
+ Method to maintain the order of the receive_ordering_buffer.
  */
 void shift_receive_buffer (rel_t *r) {
     debug("---Entering shift_receive_buffer---\n");
-    node_t * new_node = node_create(&r -> receive_ordering_buffer[0]);
     
-    if (r->last_data_received != NULL) {
-    	r -> last_data_received -> next = new_node;
+    if (r -> receive_ordering_buffer[0].seqno == null_packet().seqno){
+        return;
     }
-    r -> last_data_received = new_node;
-
-    
-    
-    debug("last data received seqno = %d \n", r->last_data_received->pkt->seqno);
-    
-    // SEND ACK(new_node+1);
-    // increment ack no
-    // r->ackno = r->ackno + 1;
-    
-    
     
     int i;
-    for (i = 0; i < r -> window_size - 2; i--) {
-        r -> receive_ordering_buffer[i] = r -> receive_ordering_buffer[i+1];
+    for (i =0; i< r->window_size -2 ; i++){
+        r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
     }
-    
-    r -> receive_ordering_buffer[r -> window_size - 1] = null_packet();
-    
-    // if after shifting the buffer we now have the next packet available too, shift the buffer again
+    // If the previous operation results in a packet in index 0 we have the packet we are
+    // looking for
     if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
         shift_receive_buffer(r);
     }
@@ -393,7 +378,6 @@ void
 rel_output (rel_t *r)
 {
 	debug("---Entering rel_output---\n");
-    debug("DEBUG: Data Packet contents: %s\n", r -> last_data_received -> pkt -> data);
     if (conn_bufspace(r -> c) > (r -> last_data_received -> pkt -> len)) {
         conn_output(r -> c, r -> last_data_received -> pkt -> data, r -> last_data_received -> pkt -> len);
         send_ack(r);
@@ -407,8 +391,21 @@ rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
-    /* TODO */
-    
+    /*
+     Sudo code for rel_timer
+    int i;
+    for (i = 0; i< sending_window_size;i++){
+     //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
+        node n = unacked_nodes[i];
+        //if this is actually a node
+        if (n.seqno != null_node().seqno){
+            if (node.time_since_last_send % resend_frequency && node.time_since_last_send max_total_resend_time){
+                send_data_packet(n.packet);
+                n.time_since_last_send += 5;//THIS SHOULD BE DEFINED SOMEWHERE
+            }
+        }
+    }
+    */
     
 }
 
