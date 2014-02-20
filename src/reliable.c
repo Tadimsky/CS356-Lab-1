@@ -83,7 +83,11 @@ struct reliable_state {
     int window_size;
     
     // All packets with sequence number lower than ackno have been recieved by the SENDER
+    // last frame received
     uint32_t ackno;
+
+    // the last ack received from the receiver
+    uint32_t last_ack_received;
     
     // The next seqno the receiver is expecting. The lowest order number in the current window.
     uint32_t seqno;
@@ -237,29 +241,12 @@ void shift_receive_buffer (rel_t *r) {
 
 
 
-void shift_send_buffer (rel_t *r, int empty_cell) {
+void shift_send_buffer (rel_t *r) {
     debug("---Entering shift_send_buffer---\n");
-//    node_t * new_node = node_create(&r -> send_ordering_buffer[0]);
-    
-//    if (r->last_data_sent != NULL) {
-//    	r -> last_data_sent -> next = new_node;
-//    }
-//    r -> last_data_sent = new_node;
-    
-    debug("shifting send_buffer \n");
-    
-    int i;
-    for (i = empty_cell; i < r -> window_size - 2; i--) {
-        r -> send_ordering_buffer[i] = r -> send_ordering_buffer[i+1];
+    for (int i = 0; i < r->window_size - 1; i++) {
+      r->send_ordering_buffer[i] = r->send_ordering_buffer[i + 1];      
     }
-    r -> send_ordering_buffer[r -> window_size - 1] = null_packet();
-    
-//    // if after shifting the buffer we now have the next packet available too, shift the buffer again
-//    if (r -> send_ordering_buffer[0].seqno != null_packet().seqno) {
-//        shift_send_buffer(r);
-//    }
-    
-    return;
+    r->send_ordering_buffer[r->window_size - 1] = null_packet();    
 }
 
 
@@ -285,43 +272,39 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         return;
     }
     
-    debug("received packet of len: %d\n", pkt -> len);
+    debug("received packet of len: %d\n", pkt->len);
     
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
-        
+        debug("Received an ACK of: %d\n", pkt->ackno);
+        debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
+        debug("\tFirst packet in send window: %d", ntohl(r->send_ordering_buffer[0].seqno));
+
+        // the ackno that was sent to us should be one larger than the last ack received on the sender side
+        if (pkt->ackno != r->last_ack_received + 1) {
+          debug("FATAL ERROR: ackno is not in order");
+          die():
+        }
+
         uint32_t ackno = pkt->ackno;
 
-        debug("received ACKNO %d \n", ackno);
-
-        int i;
-        //check each frame of the send_buffer (although it should really only ever be the 0th index)
-        debug("send_ordering_buffer content: %s\n", r ->send_ordering_buffer[0].data);
-        for (i = 0; i < r -> window_size; i++) {
-            
-            //if ackno we've just received = seqno of the sent packet + 1, server has received the packet and we can eliminate it from the send buffer
-            if (r -> send_ordering_buffer[i].seqno == ackno - 1) {
-                
-                //this inner if-statement is to check if the ack we get is for a packet that's not the next sequential packet
-                if (i > 0) {
-                    debug("received ack for a packet that shouldn't be acked yet \n");
-                }
-                
-                r -> send_ordering_buffer[i] = null_packet();
-                shift_send_buffer(r, i);
-                
-                //increment ackno so that sender may send next packet
-                (r -> ackno)++;
-                
-            }
+        // if the ackno is for the first packet in the send window (which it should be)
+        // the ack number is the number of the packet the receiver is waiting for.
+        // one less than this is the packet that was just received.
+        if (ackno != ntohl(r->send_ordering_buffer[0].seqno) + 1) {
+          debug("FATAL ERROR: ackno does not correspond to the first packet in the send window\n");
+          die();
         }
-        
-        
-        //take this ack out of the sender buffer, can now continue onto next packet
-        
-        /* TODO */
-        
-    } else {
+
+        // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
+        // increment last_ack_received and then shift the buffer
+
+        r->send_ordering_buffer[0] = null_packet();        
+        r->last_ack_received = ackno;
+
+        shift_send_buffer(r);
+    } 
+    else {
         //pkt is a data PACKET
         debug("received Data packet\n");
         debug("packet contents: %s\n", pkt->data);
@@ -352,12 +335,13 @@ rel_read (rel_t *r)
 	// drain the console
 	while (true) {
         
-        //if there's no space in the buffer, return (cant make more packets)
-        if (r -> send_ordering_buffer[r -> window_size - 1].seqno != null_packet().seqno) {
-            return;
-        }
-        
-		int bytes_read = conn_input(r->c, buffer, 500);
+        // this may need to be r->seqno - 1
+      if (r->seqno - r->last_ack_received > r->window_size) {
+        // cannot fit any new packets into the buffer
+        return;
+      }
+
+		  int bytes_read = conn_input(r->c, buffer, 500);
 
 		if (bytes_read == 0) {
 			return;
@@ -374,29 +358,16 @@ rel_read (rel_t *r)
 		r->seqno = r->seqno + 1;
 		pkt.len = htons(packet_size);
 		pkt.ackno = htonl(r->ackno); // the sequence number of the last packet received + 1
-		pkt.cksum = cksum((void*)&pkt, packet_size);
+		pkt.cksum = cksum((void*)&pkt, packet_size);		
 
-		conn_sendpkt(r->c, &pkt, packet_size);
-        
-        //put this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
-        r->send_ordering_buffer[r -> window_size - 1] = pkt;
-        if (r -> send_ordering_buffer[0].seqno == null_packet().seqno) {
-            //we have room in the send buffer to read more packets in
-            shift_send_buffer(r, 0);
-            
-        }
-
-//		// add the packet to the send queue so that
-//		// we can track what has been received by the
-//		// receiver.
-//        node_t * sent_node = node_create(&pkt);
-//        r -> last_data_sent -> next = sent_node;
-//        r -> last_data_sent = sent_node;
-
+    // this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
+    r->send_ordering_buffer[ntohl(pkt.seqno) - r->last_ack_received] = pkt;
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
          */
-        
+    
+    conn_sendpkt(r->c, &pkt, packet_size);
+
 		if (bytes_read == -1) {
 			return;
 		}
