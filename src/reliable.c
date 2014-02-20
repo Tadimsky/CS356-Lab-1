@@ -300,9 +300,6 @@ rel_read (rel_t *r)
 	char buffer[500];
 	// drain the console
 	while (true) {
-        
-        // this may need to be r->seqno - 1
-		debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
       if (r->seqno - r->last_ack_received > r->window_size) {
         // cannot fit any new packets into the buffer
         return;
@@ -313,6 +310,10 @@ rel_read (rel_t *r)
 		if (bytes_read == 0) {
 			return;
 		}
+
+		// this may need to be r->seqno - 1
+		debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
+
 
 		packet_t pkt;
 		int packet_size = DATA_PACKET_SIZE;
