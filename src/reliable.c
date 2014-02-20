@@ -420,8 +420,21 @@ rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
-    /* TODO */
-    
+    /*
+     Sudo code for rel_timer
+    int i;
+    for (i = 0; i< sending_window_size;i++){
+     //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
+        node n = unacked_nodes[i];
+        //if this is actually a node
+        if (n.seqno != null_node().seqno){
+            if (node.time_since_last_send % resend_frequency && node.time_since_last_send max_total_resend_time){
+                send_data_packet(n.packet);
+                n.time_since_last_send += 5;//THIS SHOULD BE DEFINED SOMEWHERE
+            }
+        }
+    }
+    */
     
 }
 
