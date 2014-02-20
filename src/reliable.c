@@ -74,11 +74,11 @@ struct reliable_state {
     // Pointer to slot where the most recent data was received.
     node_t * last_data_received;
     
-    // Data structure with all sent packets
-    node_t * sent_data_linked_list;
+//    // Data structure with all sent packets
+//    node_t * sent_data_linked_list;
     
-    // Pointer to the last sent packet node
-    node_t * last_data_sent;
+//    // Pointer to the last sent packet node
+//    node_t * last_data_sent;
     
     int window_size;
     
@@ -142,8 +142,8 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     node_t * first_node = node_create(&new_packet);
     r->received_data_linked_list = first_node;
     r->last_data_received = first_node;
-    r->sent_data_linked_list = first_node;
-    r->last_data_sent = first_node;
+//    r->sent_data_linked_list = first_node;
+//    r->last_data_sent = first_node;
 
     return r;
 }
@@ -356,12 +356,12 @@ rel_read (rel_t *r)
             
         }
 
-		// add the packet to the send queue so that
-		// we can track what has been received by the
-		// receiver.
-        node_t * sent_node = node_create(&pkt);
-        r -> last_data_sent -> next = sent_node;
-        r -> last_data_sent = sent_node;
+//		// add the packet to the send queue so that
+//		// we can track what has been received by the
+//		// receiver.
+//        node_t * sent_node = node_create(&pkt);
+//        r -> last_data_sent -> next = sent_node;
+//        r -> last_data_sent = sent_node;
 
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
