@@ -239,7 +239,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     }
     
     debug("received packet of len: %d\n", pkt->len);
-    debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
     
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
@@ -273,7 +272,9 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     } 
     else {
         //pkt is a data PACKET
+
         debug("received Data packet\n");
+        debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
 //        debug("packet contents: %s\n", pkt->data);
         int offset = (pkt -> seqno) - (r -> ackno);
         
