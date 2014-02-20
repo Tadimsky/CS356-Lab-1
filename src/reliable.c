@@ -51,6 +51,22 @@ node_t * node_create(packet_t * new_packet) {
 }
 
 
+struct unacked_packet_node {
+    int time_since_last_send;
+    packet_t packet;
+};
+typedef struct unacked_packet_node unacked_t;
+
+
+unacked_t null_unacked() {
+    unacked_t u;
+    u.time_since_last_send = -1;
+    packet_t p;
+    p.seqno = 0;
+    u.packet = p;
+    return u;
+}
+
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
 packet_t null_packet () {
@@ -97,6 +113,10 @@ struct reliable_state {
 
     //Array of size window that holds sent packets. Remove from the buffer when ACK comes back.
     packet_t* send_ordering_buffer;
+    
+    // Array containing the packets the sender has sent but has not received an ack for
+    // (along with the time since they were last sent)
+    unacked_t* unacked_infos;
 
 };
 rel_t *rel_list;
@@ -397,27 +417,42 @@ rel_output (rel_t *r)
     return;
 }
 
+/*
+  Run through our state of packets that have been sent but have not yet been acked.  At a specified interval, resend them.
+  There also exists a maximum time after which the packet will not continue to be resent.
+  Timeout
+ */
 void
 rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
-    /*
-     Sudo code for rel_timer
-    int i;
-    for (i = 0; i< sending_window_size;i++){
-     //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
-        node n = unacked_nodes[i];
-        //if this is actually a node
-        if (n.seqno != null_node().seqno){
-            if (node.time_since_last_send % resend_frequency && node.time_since_last_send max_total_resend_time){
-                send_data_packet(n.packet);
-                n.time_since_last_send += 5;//THIS SHOULD BE DEFINED SOMEWHERE
+    rel_t* r = rel_list;
+    
+    while (r != NULL){
+    
+        unacked_t null_node = null_unacked();
+        
+        //Temporary constants TODO: replace them with runtime variables
+        int sending_window_size =1;
+        int resend_frequency = 5;
+        int max_total_resend_time = resend_frequency * 10;
+        
+        int i;
+        for (i = 0; i< sending_window_size;i++){
+            //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
+            unacked_t* u = &(r -> unacked_infos[i]);
+            //if this is actually a node
+            if (u->packet.seqno != null_node.packet.seqno){
+                if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
+                    //TODO: abstract this out and make it a method!
+//                    send_data_packet(n -> packet);
+                    u -> time_since_last_send += resend_frequency;
+                }
             }
         }
+        r = r->next;
     }
-    */
-    
 }
 
 
