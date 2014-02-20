@@ -224,6 +224,7 @@ void shift_receive_buffer (rel_t *r) {
     if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
         shift_receive_buffer(r);
     }
+    return;
 }
 
 
@@ -247,6 +248,7 @@ void shift_send_buffer (rel_t *r, int empty_cell) {
 //    if (r -> send_ordering_buffer[0].seqno != null_packet().seqno) {
 //        shift_send_buffer(r);
 //    }
+    return;
 }
 
 
