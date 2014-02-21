@@ -186,6 +186,7 @@ void shift_receive_buffer (rel_t *r) {
     if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
         shift_receive_buffer(r);
     }
+    
     return;
 }
 
