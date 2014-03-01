@@ -131,6 +131,14 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     return r;
 }
 
+void destroy_packet(packet_t* p) {
+    free(p);
+}
+
+void destroy_unacked(unacked_t* u) {
+    free(u);
+}
+
 void rel_destroy (rel_t *r)
 {
     debug("---Entering rel_destroy---\n");
@@ -145,6 +153,9 @@ void rel_destroy (rel_t *r)
     rel_t* current = r;
     while (current != NULL) {
         rel_t* next = r->next;
+        destroy_packet(current->receive_ordering_buffer);
+        destroy_packet(current->send_ordering_buffer);
+        destroy_unacked(current->unacked_infos);
         free(current);
         current = next;
     }
