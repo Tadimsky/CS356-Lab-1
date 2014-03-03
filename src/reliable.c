@@ -29,19 +29,19 @@ struct unacked_packet_node {
 };
 typedef struct unacked_packet_node unacked_t;
 
-unacked_t null_unacked() {
-    unacked_t u;
-    u.time_since_last_send = -1;    
-    u.packet = null_packet();
-    return u;
-}
-
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
 packet_t null_packet () {
     packet_t p;
     p.seqno = 0;
     return p;
+}
+
+unacked_t null_unacked() {
+    unacked_t u;
+    u.time_since_last_send = -1;    
+    u.packet = null_packet();
+    return u;
 }
 
 struct reliable_state {
@@ -169,8 +169,7 @@ void print_window(packet_t * window, size_t window_size) {
   int i;
   for (i = 0; i < window_size; i++) {
     packet_t cur = window[i];
-    print_pkt(&cur, cur.data, cur.len - DATA_PACKET_SIZE);
-    // print packet cur
+    print_pkt(&cur, cur.data, cur.len - DATA_PACKET_SIZE);    
   }
   debug("--------------------\n");
 }
@@ -220,12 +219,8 @@ void shift_receive_buffer (rel_t *r) {
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
     }
     r->receive_ordering_buffer[r->window_size - 1] = null_packet();
-    
-    if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
-        shift_receive_buffer(r);
-    }
 
-    return;
+    shift_receive_buffer(r);    
 }
 
 
@@ -309,6 +304,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
         // increment last_ack_received and then shift the buffer
 
+        // is it always the first one in the list?
         r->unacked_infos[0] = null_unacked();
         r->last_ack_received = ackno;
         shift_send_buffer(r);
