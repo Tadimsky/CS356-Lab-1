@@ -70,7 +70,7 @@ struct reliable_state {
     packet_t* receive_ordering_buffer;
 
     //Array of size window that holds sent packets. Remove from the buffer when ACK comes back.
-    packet_t* send_ordering_buffer;
+//    packet_t* send_ordering_buffer;
     
     // Array containing the packets the sender has sent but has not received an ack for
     // (along with the time since they were last sent)
@@ -118,17 +118,29 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->receive_ordering_buffer = receive_buff;
 
     packet_t * send_buff = xmalloc(sizeof(packet_t) * cc->window);
-    r->send_ordering_buffer = send_buff;
+    unacked_t info;
+    info.time_since_last_send = -1;
+    info.packet = *send_buff;
+    r->unacked_infos = &info;
     int i;
     for (i = 0; i < cc->window; i++) {
       r->receive_ordering_buffer[i] = null_packet();
-      r->send_ordering_buffer[i] = null_packet();
+      r->unacked_infos[i] = null_unacked();
+        r->unacked_infos[i].time_since_last_send = 0;
     }
 
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
     r->last_ack_received = ACK_START;
     return r;
+}
+
+void destroy_packet(packet_t* p) {
+    free(p);
+}
+
+void destroy_unacked(unacked_t* u) {
+    free(u);
 }
 
 void rel_destroy (rel_t *r)
@@ -145,6 +157,9 @@ void rel_destroy (rel_t *r)
     rel_t* current = r;
     while (current != NULL) {
         rel_t* next = r->next;
+        destroy_packet(current->receive_ordering_buffer);
+//        destroy_packet(current->send_ordering_buffer);
+        destroy_unacked(current->unacked_infos);
         free(current);
         current = next;
     }
@@ -228,20 +243,20 @@ void shift_send_buffer (rel_t *r) {
     int i = 0;
     while ( 
         i < r->window_size && 
-        ntohl(r->send_ordering_buffer[i].seqno) != null_packet().seqno &&
-        ntohl(r->send_ordering_buffer[i].seqno) < r->last_ack_received) {
+        ntohl(r->unacked_infos[i].packet.seqno) != null_packet().seqno &&
+        ntohl(r->unacked_infos[i].packet.seqno) < r->last_ack_received) {
 
-        debug("Freeing Packet from Send: %d \n", ntohl(r->send_ordering_buffer[i].seqno));
-        r->send_ordering_buffer[i] = null_packet();
+        debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
+        r->unacked_infos[i] = null_unacked();
         i++;
     }    
 
     int last_moved = i;
     for (i = 0; i < r->window_size - last_moved; i++) {
-        r->send_ordering_buffer[i] = r->send_ordering_buffer[last_moved + i];
+        r->unacked_infos[i] = r->unacked_infos[last_moved + i];
     }
     for (i = last_moved; i < r->window_size; i++) {        
-        r->send_ordering_buffer[i] = null_packet();        
+        r->unacked_infos[i] = null_unacked();        
     }
     
 }
@@ -276,7 +291,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         //pkt is an ACK
         debug("Received an ACK of: %d\n", pkt->ackno);
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
-        debug("\tFirst packet in send window: %d\n", ntohl(r->send_ordering_buffer[0].seqno));
+        debug("\tFirst packet in send window: %d", ntohl(r->unacked_infos[0].packet.seqno));
 
         // the ackno that was sent to us should be one larger than the last ack received on the sender side
         if (pkt->ackno <= r->last_ack_received) {
@@ -288,16 +303,16 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
         // if the ackno is for the first packet in the send window (which it should be)
         // the ack number is the number of the packet the receiver is waiting for.
-        // one less than this is the packet that was just received.
-        if (ackno < ntohl(r->send_ordering_buffer[0].seqno)) {
+
+        if (ackno < ntohl(r->unacked_infos[0].packet.seqno) + 1) {
           debug("FATAL ERROR: ackno does not correspond to the first packet in the send window\n");
           exit(1);
         }
         // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
         // increment last_ack_received and then shift the buffer
-        
-        r->last_ack_received = ackno;
 
+        r->unacked_infos[0] = null_unacked();
+        r->last_ack_received = ackno;
         shift_send_buffer(r);
     } 
     else {
@@ -370,8 +385,8 @@ rel_read (rel_t *r)
         // 
         int order = ntohl(pkt.seqno) - r->last_ack_received;
         debug("Order for new packet: %d\n", order);
+        r->unacked_infos[order].packet = pkt;
 
-        r->send_ordering_buffer[order] = pkt;
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
          */
