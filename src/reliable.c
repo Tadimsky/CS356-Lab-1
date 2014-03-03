@@ -31,10 +31,8 @@ typedef struct unacked_packet_node unacked_t;
 
 unacked_t null_unacked() {
     unacked_t u;
-    u.time_since_last_send = -1;
-    packet_t p;
-    p.seqno = 0;
-    u.packet = p;
+    u.time_since_last_send = -1;    
+    u.packet = null_packet();
     return u;
 }
 
