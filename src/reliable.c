@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include "rlib.h"
 
-#define debug(...)   fprintf(stderr, __VA_ARGS__)
+#define debug(...)  fprintf(stderr, __VA_ARGS__)
 #define DATA_PACKET_SIZE 12
 #define ACK_PACKET_SIZE 8
 
@@ -162,14 +162,24 @@ void rel_destroy (rel_t *r)
 }
 
 void print_window(packet_t * window, size_t window_size) {
-  debug("Printing out window: %p\n", window);
-  debug("--------------------");
+    return;
+  debug("|");
+
   int i;
-  for (i = 0; i < window_size; i++) {
-    packet_t cur = window[i];
-    print_pkt(&cur, cur.data, cur.len - DATA_PACKET_SIZE);    
-  }
-  debug("--------------------\n");
+    for (i = 0; i < window_size; i++) {
+        debug("------|");
+    }
+    debug("\n");
+    for (i = 0; i < window_size; i++) {
+        packet_t cur = window[i];        
+        debug("%7.5d", cur.seqno);
+    }
+    debug("\n");
+    debug("|");
+    for (i = 0; i < window_size; i++) {
+        debug("------|");
+    }    
+    debug("\n");
 }
 
 
@@ -192,7 +202,7 @@ void rel_demux (const struct config_common *cc,
 
 
 void send_ack(rel_t *r) {
-    debug("---Entering send_ack---\n");
+    // debug("---Entering send_ack---\n");
     packet_t pkt;
     pkt.len = htons(ACK_PACKET_SIZE);   
     pkt.ackno = htonl(r->ackno);
@@ -206,13 +216,14 @@ void send_ack(rel_t *r) {
  Method to maintain the order of the receive_ordering_buffer.
  */
 void shift_receive_buffer (rel_t *r) {
-    debug("---Entering shift_receive_buffer---\n");
+    print_window(r->receive_ordering_buffer, r->window_size);
+    // debug("---Entering shift_receive_buffer---\n");
     
     if (r->receive_ordering_buffer[0].seqno == null_packet().seqno){
         return;
     }
 
-    debug("Freeing Packet from Receive: %d \n", r->receive_ordering_buffer[0].seqno);
+    // debug("Freeing Packet from Receive: %d \n", r->receive_ordering_buffer[0].seqno);
     int i;
     for (i = 0; i< r->window_size - 1; i++){        
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
@@ -228,9 +239,9 @@ void shift_receive_buffer (rel_t *r) {
   can be inserted and sent.
 */
 void shift_send_buffer (rel_t *r) {
-    debug("---Entering shift_send_buffer---\n");
+    // debug("---Entering shift_send_buffer---\n");
 
-    debug("LAR: %d", r->last_ack_received);
+    // debug("LAR: %d", r->last_ack_received);
 
     int i = 0;
     while ( 
@@ -238,7 +249,7 @@ void shift_send_buffer (rel_t *r) {
         ntohl(r->unacked_infos[i].packet.seqno) != null_packet().seqno &&
         ntohl(r->unacked_infos[i].packet.seqno) < r->last_ack_received) {
 
-        debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
+        // debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
         r->unacked_infos[i] = null_unacked();
         i++;
     }    
@@ -264,7 +275,7 @@ void shift_send_buffer (rel_t *r) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-  debug("---Entering rel_recvpkt---\n");
+  // debug("---Entering rel_recvpkt---\n");
 
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
@@ -273,18 +284,21 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
-        debug("size_t n is different from pkt->len; this is an error packet, return");
+        debug("size_t (%d) n (%d) is different from pkt->len; this is an error packet, return", pkt->len, n);
         return;
     }
     
-    debug("received packet of len: %d\n", pkt->len);
+    // debug("received packet of len: %d\n", pkt->len);
     
     if (pkt->len < DATA_PACKET_SIZE) {
         //pkt is an ACK
+        //
+        ///
+        /*
         debug("Received an ACK of: %d\n", pkt->ackno);
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
         debug("\tFirst packet in send window: %d", ntohl(r->unacked_infos[0].packet.seqno));
-
+        */
         // the ackno that was sent to us should be one larger than the last ack received on the sender side
         if (pkt->ackno <= r->last_ack_received) {
           debug("FATAL ERROR: ackno is not in order\n");
@@ -310,12 +324,12 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     } 
     else {
         //pkt is a data PACKET
-
+        /*
         debug("received Data packet\n");
         debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
-
+        */
         int offset = (pkt -> seqno) - (r -> ackno);
-        debug("packet in window slot: %d \n", offset);
+        // debug("packet in window slot: %d \n", offset);
 
         if (offset >= 0 && offset < r->window_size) {
             // offset tells where in the receive_ordering_buffer this packet falls            
@@ -343,7 +357,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *r)
 {
-    debug("---Entering rel_read---\n");
+    // debug("---Entering rel_read---\n");
 	char buffer[500];
 	// drain the console
 	while (true) {
@@ -359,7 +373,7 @@ rel_read (rel_t *r)
 			return;
 		}
 		// this may need to be r->seqno - 1
-		debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
+		// debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
 
 
 		packet_t pkt;
@@ -377,7 +391,7 @@ rel_read (rel_t *r)
         // this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
         // 
         int order = ntohl(pkt.seqno) - r->last_ack_received;
-        debug("Order for new packet: %d\n", order);
+        // debug("Order for new packet: %d\n", order);
         r->unacked_infos[order].packet = pkt;
 
         /*
@@ -398,7 +412,7 @@ rel_read (rel_t *r)
 void
 rel_output (rel_t *r)
 {
-	debug("---Entering rel_output---\n");
+	// debug("---Entering rel_output---\n");
 	int i = 0;
 	for (i = 0; i < r->window_size; i++) {
 		packet_t f = r->receive_ordering_buffer[i];
@@ -456,6 +470,7 @@ rel_timer ()
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
                     //TODO: abstract this out and make it a method!
 //                    send_data_packet(n -> packet);
+                    // debug("Resending Packet.");
                     conn_sendpkt(r->c, &(u->packet), u->packet.len);
                 }
             }
