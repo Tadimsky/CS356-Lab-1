@@ -150,6 +150,19 @@ void rel_destroy (rel_t *r)
     }
 }
 
+void print_window(packet_t * window, size_t window_size) {
+  debug("Printing out window: %p\n", window);
+  debug("--------------------");
+  int i;
+  for (i = 0; i < window_size; i++) {
+    packet_t cur = window[i];
+    print_pkt(&cur, cur.data, cur.len - DATA_PACKET_SIZE);
+    // print packet cur
+  }
+  debug("--------------------\n");
+}
+
+
 
 /* This function only gets called when the process is running as a
  * server and must handle connections from multiple clients.  You have
@@ -167,6 +180,17 @@ void rel_demux (const struct config_common *cc,
 }
 
 
+
+void send_ack(rel_t *r) {
+    debug("---Entering send_ack---\n");
+    packet_t pkt;
+    pkt.len = htons(ACK_PACKET_SIZE);   
+    pkt.ackno = htonl(r->ackno);
+    pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
+
+    conn_sendpkt(r->c, &pkt, ACK_PACKET_SIZE);
+}
+
 /* 
  Method to maintain the order of the receive_ordering_buffer.
  */
@@ -176,13 +200,14 @@ void shift_receive_buffer (rel_t *r) {
     if (r->receive_ordering_buffer[0].seqno == null_packet().seqno){
         return;
     }
-    
+
+    debug("Freeing Packet from Receive: %d \n", r->receive_ordering_buffer[0].seqno);
     int i;
-    for (i = 0; i< r->window_size - 1; i++){
+    for (i = 0; i< r->window_size - 1; i++){        
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
     }
-    // If the previous operation results in a packet in index 0 we have the packet we are
-    // looking for
+    r->receive_ordering_buffer[r->window_size - 1] = null_packet();
+    
     if (r -> receive_ordering_buffer[0].seqno != null_packet().seqno) {
         shift_receive_buffer(r);
     }
@@ -197,23 +222,28 @@ void shift_receive_buffer (rel_t *r) {
 */
 void shift_send_buffer (rel_t *r) {
     debug("---Entering shift_send_buffer---\n");
-    int i;
-    for (i = 0; i < r->window_size - 1; i++) {
-      r->send_ordering_buffer[i] = r->send_ordering_buffer[i + 1];      
+
+    debug("LAR: %d", r->last_ack_received);
+
+    int i = 0;
+    while ( 
+        i < r->window_size && 
+        ntohl(r->send_ordering_buffer[i].seqno) != null_packet().seqno &&
+        ntohl(r->send_ordering_buffer[i].seqno) < r->last_ack_received) {
+
+        debug("Freeing Packet from Send: %d \n", ntohl(r->send_ordering_buffer[i].seqno));
+        r->send_ordering_buffer[i] = null_packet();
+        i++;
+    }    
+
+    int last_moved = i;
+    for (i = 0; i < r->window_size - last_moved; i++) {
+        r->send_ordering_buffer[i] = r->send_ordering_buffer[last_moved + i];
     }
-    r->send_ordering_buffer[r->window_size - 1] = null_packet();    
-}
-
-
-void print_window(packet_t * window, size_t window_size) {
-  debug("Printing out window: \n");
-  debug("--------------------");
-  int i;
-  for (i = 0; i < window_size; i++) {
-    packet_t cur = window[i];
-    // print packet cur
-  }
-  debug("--------------------");
+    for (i = last_moved; i < r->window_size; i++) {        
+        r->send_ordering_buffer[i] = null_packet();        
+    }
+    
 }
 
 
@@ -228,6 +258,7 @@ void print_window(packet_t * window, size_t window_size) {
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
   debug("---Entering rel_recvpkt---\n");
+
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
@@ -245,11 +276,11 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         //pkt is an ACK
         debug("Received an ACK of: %d\n", pkt->ackno);
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
-        debug("\tFirst packet in send window: %d", ntohl(r->send_ordering_buffer[0].seqno));
+        debug("\tFirst packet in send window: %d\n", ntohl(r->send_ordering_buffer[0].seqno));
 
         // the ackno that was sent to us should be one larger than the last ack received on the sender side
-        if (pkt->ackno != r->last_ack_received + 1) {
-          debug("FATAL ERROR: ackno is not in order");
+        if (pkt->ackno <= r->last_ack_received) {
+          debug("FATAL ERROR: ackno is not in order\n");
           exit(1);
         }
 
@@ -258,15 +289,13 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // if the ackno is for the first packet in the send window (which it should be)
         // the ack number is the number of the packet the receiver is waiting for.
         // one less than this is the packet that was just received.
-        if (ackno != ntohl(r->send_ordering_buffer[0].seqno) + 1) {
+        if (ackno < ntohl(r->send_ordering_buffer[0].seqno)) {
           debug("FATAL ERROR: ackno does not correspond to the first packet in the send window\n");
           exit(1);
         }
-
         // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
         // increment last_ack_received and then shift the buffer
-
-        r->send_ordering_buffer[0] = null_packet();        
+        
         r->last_ack_received = ackno;
 
         shift_send_buffer(r);
@@ -276,16 +305,25 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
         debug("received Data packet\n");
         debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
-//        debug("packet contents: %s\n", pkt->data);
+
         int offset = (pkt -> seqno) - (r -> ackno);
-        
-        // offset tells where in the receive_ordering_buffer this packet falls
         debug("packet in window slot: %d \n", offset);
-        r -> receive_ordering_buffer[offset] = *pkt;
-        if ((r -> receive_ordering_buffer[0]).seqno != null_packet().seqno) {
-            // shift_receive_buffer(r);
+
+        if (offset >= 0 && offset < r->window_size) {
+            // offset tells where in the receive_ordering_buffer this packet falls            
+            r -> receive_ordering_buffer[offset] = *pkt; 
+            rel_output(r);           
         }
-        rel_output(r);
+        else {
+            // already received this data
+            if (offset < 0) {
+                // need to ack it anyway
+                send_ack(r);
+            }
+            else {
+                debug("Error, packet outside of receive window.");    
+            }
+        }       
         
     }
 }
@@ -302,6 +340,7 @@ rel_read (rel_t *r)
 	// drain the console
 	while (true) {
       if (r->seqno - r->last_ack_received > r->window_size) {
+        debug("Sequence Number for new packet is too large for window.");
         // cannot fit any new packets into the buffer
         return;
       }
@@ -311,7 +350,6 @@ rel_read (rel_t *r)
 		if (bytes_read == 0) {
 			return;
 		}
-
 		// this may need to be r->seqno - 1
 		debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
 
@@ -328,36 +366,25 @@ rel_read (rel_t *r)
 		pkt.ackno = htonl(r->ackno); // the sequence number of the last packet received + 1
 		pkt.cksum = cksum((void*)&pkt, packet_size);		
 
-    // this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
-    r->send_ordering_buffer[ntohl(pkt.seqno) - r->last_ack_received] = pkt;
+        // this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
+        // 
+        int order = ntohl(pkt.seqno) - r->last_ack_received;
+        debug("Order for new packet: %d\n", order);
+
+        r->send_ordering_buffer[order] = pkt;
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
          */
     
-    conn_sendpkt(r->c, &pkt, packet_size);
+        conn_sendpkt(r->c, &pkt, packet_size);
 
     // increment the sequence number for next time
-    r->seqno = r->seqno + 1;
+        r->seqno = r->seqno + 1;
 
 		if (bytes_read == -1) {
 			return;
-		}
+		} 
 	}
-    return;
-
-}
-
-
-void send_ack(rel_t *r) {
-    debug("---Entering send_ack---\n");
-	packet_t pkt;
-	pkt.len = htons(ACK_PACKET_SIZE);
-	r->ackno = r->ackno + 1;
-	pkt.ackno = htonl(r->ackno);
-	pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
-
-	conn_sendpkt(r->c, &pkt, ACK_PACKET_SIZE);
-    return;
 }
 
 void
@@ -372,16 +399,21 @@ rel_output (rel_t *r)
 			break;
 		}
 		else {
-			// if we have enough space in the buffer
+			// if we have enough space in the buffer            
 			if (conn_bufspace(r->c) > (f.len)) {
 				conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);
+
+                // send ack to free up the sender's send window
+                r->ackno = r->ackno + 1;
 				send_ack(r);
-				// shift_receive_buffer(r);
+
+				
 			}
 		}
 	}
 
-    return;
+    // shift our receive buffer for the packets that have now been outputted
+    shift_receive_buffer(r);
 }
 
 /*
