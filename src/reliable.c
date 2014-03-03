@@ -115,11 +115,9 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     packet_t * receive_buff = xmalloc(sizeof(packet_t) * cc->window);
     r->receive_ordering_buffer = receive_buff;
 
-    packet_t * send_buff = xmalloc(sizeof(packet_t) * cc->window);
-    unacked_t info;
-    info.time_since_last_send = -1;
-    info.packet = *send_buff;
-    r->unacked_infos = &info;
+    unacked_t * info = xmalloc(sizeof(unacked_t) * cc->window);
+    r->unacked_infos = info;
+
     int i;
     for (i = 0; i < cc->window; i++) {
       r->receive_ordering_buffer[i] = null_packet();
@@ -198,6 +196,7 @@ void send_ack(rel_t *r) {
     packet_t pkt;
     pkt.len = htons(ACK_PACKET_SIZE);   
     pkt.ackno = htonl(r->ackno);
+    pkt.seqno = 0;
     pkt.cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
 
     conn_sendpkt(r->c, &pkt, ACK_PACKET_SIZE);
@@ -243,9 +242,9 @@ void shift_send_buffer (rel_t *r) {
         r->unacked_infos[i] = null_unacked();
         i++;
     }    
-
     int last_moved = i;
-    for (i = 0; i < r->window_size - last_moved; i++) {
+
+    for (i = 0; i < last_moved; i++) {
         r->unacked_infos[i] = r->unacked_infos[last_moved + i];
     }
     for (i = last_moved; i < r->window_size; i++) {        
@@ -354,7 +353,7 @@ rel_read (rel_t *r)
         return;
       }
 
-		  int bytes_read = conn_input(r->c, buffer, 500);
+		int bytes_read = conn_input(r->c, buffer, 500);
 
 		if (bytes_read == 0) {
 			return;
@@ -415,8 +414,6 @@ rel_output (rel_t *r)
                 // send ack to free up the sender's send window
                 r->ackno = r->ackno + 1;
 				send_ack(r);
-
-				
 			}
 		}
 	}
@@ -435,7 +432,6 @@ rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
-	/*
     rel_t* r = rel_list;
     
     while (r != NULL){
@@ -448,21 +444,25 @@ rel_timer ()
         int max_total_resend_time = resend_frequency * 10;
         
         int i;
-        for (i = 0; i< sending_window_size;i++){
+        for (i = 0; i< sending_window_size;i++) {
+
+
             //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
             unacked_t* u = &(r -> unacked_infos[i]);
+            u->time_since_last_send++;
+
             //if this is actually a node
             if (u->packet.seqno != null_node.packet.seqno){
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
                     //TODO: abstract this out and make it a method!
 //                    send_data_packet(n -> packet);
-                    u -> time_since_last_send += resend_frequency;
+                    conn_sendpkt(r->c, &(u->packet), u->packet.len);
                 }
             }
         }
         r = r->next;
     }
-    */
+    
 }
 
 
