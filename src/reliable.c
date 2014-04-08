@@ -214,7 +214,12 @@ void send_ack(rel_t *r) {
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
     pkt->cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
-
+    //remove_me
+    FILE *file;
+    file = fopen("file.txt","a+"); /* apend file (add text to
+                                    a file or create a file if it does not exist.*/
+    fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt->ackno)); /*writes*/
+    fclose(file); /*done!*/
     conn_sendpkt(r->c, pkt, ACK_PACKET_SIZE);
     
     free(pkt);
@@ -427,7 +432,14 @@ rel_read (rel_t *r)
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
          */
-    
+        
+        //remove_me
+        FILE *file;
+        file = fopen("file.txt","a+"); /* apend file (add text to
+                                        a file or create a file if it does not exist.*/
+        fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt.ackno)); /*writes*/
+        fclose(file); /*done!*/
+        
         conn_sendpkt(r->c, &pkt, packet_size);
 
     /* increment the sequence number for next time
@@ -522,6 +534,12 @@ rel_timer ()
 		//	debug("Length: %d", ntohs(u->packet.len));
 		 *
 		 */
+                    //remove_me
+                    FILE *file;
+                    file = fopen("file.txt","a+"); /* apend file (add text to
+                                                    a file or create a file if it does not exist.*/
+                    fprintf(file,"----ReSending Pkt seqno:%d, len: %d ----\n",ntohs(u->packet.seqno), ntohs(u->packet.len)); /*writes*/
+                    fclose(file); /*done!*/
                     conn_sendpkt(r->c, &(u->packet), ntohs(u->packet.len));
                 }
             }
