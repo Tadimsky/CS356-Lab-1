@@ -470,8 +470,9 @@ rel_timer ()
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
                     //TODO: abstract this out and make it a method!
 //                    send_data_packet(n -> packet);
-                    // debug("Resending Packet.");
-                    conn_sendpkt(r->c, &(u->packet), u->packet.len);
+                    //debug("Resending Packet.");
+		//	debug("Length: %d", ntohs(u->packet.len));
+                    conn_sendpkt(r->c, &(u->packet), ntohs(u->packet.len));
                 }
             }
         }
