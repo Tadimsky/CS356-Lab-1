@@ -32,7 +32,7 @@ typedef struct unacked_packet_node unacked_t;
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
 packet_t * null_packet () {
-    packet_t * p = (unacket_t *) malloc(sizeof(packet_t));
+    packet_t * p = (packet_t *) malloc(sizeof(packet_t));
     p->seqno = 0;
     return p;
 }
@@ -126,8 +126,8 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
     int i;
     for (i = 0; i < cc->window; i++) {
-      r->receive_ordering_buffer[i] = null_packet();
-      r->unacked_infos[i] = null_unacked();
+      r->receive_ordering_buffer[i] = *null_packet();
+      r->unacked_infos[i] = *null_unacked();
         r->unacked_infos[i].time_since_last_send = 0;
     }
 
@@ -232,7 +232,7 @@ void shift_receive_buffer (rel_t *r) {
     print_window(r->receive_ordering_buffer, r->window_size);
     /* debug("---Entering shift_receive_buffer---\n"); */
     
-    if (r->receive_ordering_buffer[0].seqno == null_packet().seqno){
+    if (r->receive_ordering_buffer[0].seqno == null_packet()->seqno){
         return;
     }
 
@@ -242,7 +242,7 @@ void shift_receive_buffer (rel_t *r) {
     for (i = 0; i< r->window_size - 1; i++){        
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
     }
-    r->receive_ordering_buffer[r->window_size - 1] = null_packet();
+    r->receive_ordering_buffer[r->window_size - 1] = *null_packet();
 
     shift_receive_buffer(r);    
 }
@@ -261,13 +261,13 @@ void shift_send_buffer (rel_t *r) {
     int i = 0;
     while ( 
         i < r->window_size && 
-        ntohl(r->unacked_infos[i].packet.seqno) != null_packet().seqno &&
-        ntohl(r->unacked_infos[i].packet.seqno) < r->last_ack_received) {
+        ntohl((r->unacked_infos[i].packet)->seqno) != null_packet()->seqno &&
+        ntohl((r->unacked_infos[i].packet)->seqno) < r->last_ack_received) {
 
         /* debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
 
         */
-    	r->unacked_infos[i] = null_unacked();
+    	r->unacked_infos[i] = *null_unacked();
         i++;
     }    
     int last_moved = i;
@@ -276,7 +276,7 @@ void shift_send_buffer (rel_t *r) {
         r->unacked_infos[i] = r->unacked_infos[last_moved + i];
     }
     for (i = last_moved; i < r->window_size; i++) {        
-        r->unacked_infos[i] = null_unacked();        
+        r->unacked_infos[i] = *null_unacked();        
     }
     
 }
@@ -314,7 +314,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         
         debug("Received an ACK of: %d\n", pkt->ackno);
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
-        debug("\tFirst packet in send window: %d\n", ntohl(r->unacked_infos[0].packet.seqno));
+        debug("\tFirst packet in send window: %d\n", ntohl(r->unacked_infos[0].packet->seqno));
         
         /* the ackno that was sent to us should be one larger than the last ack received on the sender side
         */
@@ -330,7 +330,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
          *
          */
 
-        if (ackno < ntohl(r->unacked_infos[0].packet.seqno) + 1) {
+        if (ackno < ntohl(r->unacked_infos[0].packet->seqno) + 1) {
           debug("Ack No %d is smaller than the send window.\n", ackno);
           return;
         }
@@ -340,7 +340,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // is it always the first one in the list?
          *
          */
-        r->unacked_infos[0] = null_unacked();
+        r->unacked_infos[0] = *null_unacked();
         r->last_ack_received = ackno;
         shift_send_buffer(r);
     } 
@@ -424,7 +424,7 @@ rel_read (rel_t *r)
         /* this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
          */
         int order = ntohl(pkt->seqno) - r->last_ack_received;
-        r->unacked_infos[order].packet = *pkt;
+        r->unacked_infos[order].packet = pkt;
 
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
@@ -437,7 +437,7 @@ rel_read (rel_t *r)
         fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt->ackno)); /*writes*/
         fclose(file); /*done!*/
         
-        conn_sendpkt(r->c, &pkt, packet_size);
+        conn_sendpkt(r->c, pkt, packet_size);
 
     /* increment the sequence number for next time
      *
@@ -459,7 +459,7 @@ rel_output (rel_t *r)
 	int i = 0;
 	for (i = 0; i < r->window_size; i++) {
 		packet_t f = r->receive_ordering_buffer[i];
-		if (f.ackno == null_packet().ackno) {
+		if (f.ackno == null_packet()->ackno) {
 			/* first out of order packet encountered
 			 *
 			 */
@@ -501,7 +501,7 @@ rel_timer ()
     
     while (r != NULL){
     
-        unacked_t null_node = null_unacked();
+        unacked_t * null_node = null_unacked();
 
         /*Temporary constants TODO: replace them with runtime variables
          *
@@ -522,7 +522,7 @@ rel_timer ()
             /*if this is actually a node
              *
              */
-            if (u->packet.seqno != null_node.packet.seqno){
+            if (u->packet->seqno != null_node->packet->seqno){
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
                     /*
                 	//TODO: abstract this out and make it a method!
@@ -535,9 +535,9 @@ rel_timer ()
                     FILE *file;
                     file = fopen("file.txt","a+"); /* apend file (add text to
                                                     a file or create a file if it does not exist.*/
-                    fprintf(file,"----ReSending Pkt seqno:%d, len: %d ----\n",ntohs(u->packet.seqno), ntohs(u->packet.len)); /*writes*/
+                    fprintf(file,"----ReSending Pkt seqno:%d, len: %d ----\n",ntohs(u->packet->seqno), ntohs(u->packet->len)); /*writes*/
                     fclose(file); /*done!*/
-                    conn_sendpkt(r->c, &(u->packet), ntohs(u->packet.len));
+                    conn_sendpkt(r->c, u->packet, ntohs(u->packet->len));
                 }
             }
         }
