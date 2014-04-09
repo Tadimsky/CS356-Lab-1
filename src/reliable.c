@@ -436,7 +436,7 @@ rel_read (rel_t *r)
         FILE *file;
         file = fopen("file.txt","a+"); /* apend file (add text to
                                         a file or create a file if it does not exist.*/
-        fprintf(file,"---Sending Seqno:%d---\n", ntohs(pkt.seqno)); /*writes*/
+        fprintf(file,"---Sending Seqno:%d---\n", ntohl(pkt.seqno)); /*writes*/
         fclose(file); /*done!*/
         
         conn_sendpkt(r->c, &pkt, packet_size);
@@ -511,10 +511,8 @@ rel_timer ()
         int sending_window_size = r->window_size;
         int resend_frequency = 5;
         int max_total_resend_time = resend_frequency * 10;
-        
         int i;
         for (i = 0; i< sending_window_size;i++) {
-
 
             /*unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
             */
