@@ -213,7 +213,7 @@ void send_ack(rel_t *r) {
     pkt->len = htons(ACK_PACKET_SIZE);   
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
-    pkt->cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
+    pkt->cksum = cksum((void*) pkt, ACK_PACKET_SIZE);
     //remove_me
     FILE *file;
     file = fopen("file.txt","a+"); /* apend file (add text to
@@ -395,7 +395,7 @@ rel_read (rel_t *r)
 	 */
 	while (true) {
       if (r->seqno - r->last_ack_received > r->window_size) {
-        debug("Sequence Number for new packet is too large for window.");
+        debug("Sequence Number(%d) for new packet is too large for window(%d).", r->seqno, r->window_size);
         /* cannot fit any new packets into the buffer
          *
          */
