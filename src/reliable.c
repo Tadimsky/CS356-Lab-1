@@ -25,22 +25,22 @@
 
 struct unacked_packet_node {
     int time_since_last_send;
-    packet_t packet;
+    packet_t * packet;
 };
 typedef struct unacked_packet_node unacked_t;
 
 /* Returns a packet with seqno = 0 (acts as a NULL packet)
  */
-packet_t null_packet () {
-    packet_t p;
-    p.seqno = 0;
+packet_t * null_packet () {
+    packet_t * p = (unacket_t *) malloc(sizeof(packet_t));
+    p->seqno = 0;
     return p;
 }
 
-unacked_t null_unacked() {
-    unacked_t u;
-    u.time_since_last_send = -1;    
-    u.packet = null_packet();
+unacked_t * null_unacked() {
+    unacked_t * u = (unacked_t *) malloc(sizeof(unacked_t));
+    u->time_since_last_send = -1;    
+    u->packet = null_packet();
     return u;
 }
 
