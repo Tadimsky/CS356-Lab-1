@@ -53,25 +53,31 @@ struct reliable_state {
     /* Add your own data fields below this */
     
     int window_size;
-    
+    /*
     // All packets with sequence number lower than ackno have been recieved by the SENDER
     // last frame received
+     *
+     */
     uint32_t ackno;
 
-    // the last ack received from the receiver
+    /* the last ack received from the receiver */
     uint32_t last_ack_received;
     
-    // The next seqno the receiver is expecting. The lowest order number in the current window.
+    /* The next seqno the receiver is expecting. The lowest order number in the current window.
+    */
     uint32_t seqno;
     
-    //Array of size window that holds incomming packets so that they can be added to our linked list in order.
+    /*Array of size window that holds incomming packets so that they can be added to our linked list in order.
+    */
     packet_t* receive_ordering_buffer;
 
+    /*
     //Array of size window that holds sent packets. Remove from the buffer when ACK comes back.
 //    packet_t* send_ordering_buffer;
     
     // Array containing the packets the sender has sent but has not received an ack for
     // (along with the time since they were last sent)
+    */
     unacked_t* unacked_infos;
 
 };
@@ -154,7 +160,7 @@ void rel_destroy (rel_t *r)
     while (current != NULL) {
         rel_t* next = r->next;
         destroy_packet(current->receive_ordering_buffer);
-//        destroy_packet(current->send_ordering_buffer);
+/*        destroy_packet(current->send_ordering_buffer); */
         destroy_unacked(current->unacked_infos);
         free(current);
         current = next;
@@ -208,7 +214,12 @@ void send_ack(rel_t *r) {
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
     pkt->cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
-
+    //remove_me
+    FILE *file;
+    file = fopen("file.txt","a+"); /* apend file (add text to
+                                    a file or create a file if it does not exist.*/
+    fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt->ackno)); /*writes*/
+    fclose(file); /*done!*/
     conn_sendpkt(r->c, pkt, ACK_PACKET_SIZE);
 
     free(pkt);
@@ -219,13 +230,14 @@ void send_ack(rel_t *r) {
  */
 void shift_receive_buffer (rel_t *r) {
     print_window(r->receive_ordering_buffer, r->window_size);
-    // debug("---Entering shift_receive_buffer---\n");
+    /* debug("---Entering shift_receive_buffer---\n"); */
     
     if (r->receive_ordering_buffer[0].seqno == null_packet().seqno){
         return;
     }
 
-    // debug("Freeing Packet from Receive: %d \n", r->receive_ordering_buffer[0].seqno);
+    /* debug("Freeing Packet from Receive: %d \n", r->receive_ordering_buffer[0].seqno);
+    */
     int i;
     for (i = 0; i< r->window_size - 1; i++){        
         r->receive_ordering_buffer[i] = r->receive_ordering_buffer [i+1];
@@ -241,18 +253,21 @@ void shift_receive_buffer (rel_t *r) {
   can be inserted and sent.
 */
 void shift_send_buffer (rel_t *r) {
-    // debug("---Entering shift_send_buffer---\n");
+    /* debug("---Entering shift_send_buffer---\n");
 
     // debug("LAR: %d", r->last_ack_received);
 
+*/
     int i = 0;
     while ( 
         i < r->window_size && 
         ntohl(r->unacked_infos[i].packet.seqno) != null_packet().seqno &&
         ntohl(r->unacked_infos[i].packet.seqno) < r->last_ack_received) {
 
-        // debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
-        r->unacked_infos[i] = null_unacked();
+        /* debug("Freeing Packet from Send: %d \n", ntohl(r->unacked_infos[i].packet.seqno));
+
+        */
+    	r->unacked_infos[i] = null_unacked();
         i++;
     }    
     int last_moved = i;
@@ -277,23 +292,26 @@ void shift_send_buffer (rel_t *r) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-  // debug("---Entering rel_recvpkt---\n");
+  /* debug("---Entering rel_recvpkt---\n"); */
 
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
 
     if (n != pkt->len) {
-        //we have not received the full packet or it's an error packet
+        /*we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
+        */
         debug("Bytes read: (%d) is different from pkt->len (%d); this is an error packet, return.\n", pkt->len, n);
         return;
     }
     
-    // debug("received packet of len: %d\n", pkt->len);
+    /* debug("received packet of len: %d\n", pkt->len);
+     *
+     */
     
     if (pkt->len < DATA_PACKET_SIZE) {
-        //pkt is an ACK
+        /*pkt is an ACK
         //
         ///
         /*
@@ -301,7 +319,8 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
         debug("\tFirst packet in send window: %d", ntohl(r->unacked_infos[0].packet.seqno));
         */
-        // the ackno that was sent to us should be one larger than the last ack received on the sender side
+        /* the ackno that was sent to us should be one larger than the last ack received on the sender side
+        */
         if (pkt->ackno <= r->last_ack_received) {
           debug("FATAL ERROR: ackno is not in order\n");
           exit(1);
@@ -309,39 +328,47 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 
         uint32_t ackno = pkt->ackno;
 
-        // if the ackno is for the first packet in the send window (which it should be)
+        /* if the ackno is for the first packet in the send window (which it should be)
         // the ack number is the number of the packet the receiver is waiting for.
+         *
+         */
 
         if (ackno < ntohl(r->unacked_infos[0].packet.seqno) + 1) {
           debug("FATAL ERROR: ackno does not correspond to the first packet in the send window\n");
           exit(1);
         }
-        // if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
+        /* if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
         // increment last_ack_received and then shift the buffer
 
         // is it always the first one in the list?
+         *
+         */
         r->unacked_infos[0] = null_unacked();
         r->last_ack_received = ackno;
         shift_send_buffer(r);
     } 
     else {
-        //pkt is a data PACKET
+        /*pkt is a data PACKET */
         /*
         debug("received Data packet\n");
         debug("Ackno: %d Seqno: %d\n", r->ackno, pkt ->seqno);
         */
         int offset = (pkt -> seqno) - (r -> ackno);
-        // debug("packet in window slot: %d \n", offset);
 
         if (offset >= 0 && offset < r->window_size) {
-            // offset tells where in the receive_ordering_buffer this packet falls            
+            /* offset tells where in the receive_ordering_buffer this packet falls
+             */
             r -> receive_ordering_buffer[offset] = *pkt; 
             rel_output(r);           
         }
         else {
-            // already received this data
+            /* already received this data
+             *
+             */
             if (offset < 0) {
-                // need to ack it anyway
+                /* need to ack it anyway
+                 *
+                 */
                 send_ack(r);
             }
             else {
@@ -359,13 +386,19 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 void
 rel_read (rel_t *r)
 {
-    // debug("---Entering rel_read---\n");
+    /* debug("---Entering rel_read---\n");
+     *
+     */
 	char buffer[500];
-	// drain the console
+	/* drain the console
+	 *
+	 */
 	while (true) {
       if (r->seqno - r->last_ack_received > r->window_size) {
         debug("Sequence Number for new packet is too large for window.");
-        // cannot fit any new packets into the buffer
+        /* cannot fit any new packets into the buffer
+         *
+         */
         return;
       }
 
@@ -374,9 +407,9 @@ rel_read (rel_t *r)
 		if (bytes_read == 0) {
 			return;
 		}
-		// this may need to be r->seqno - 1
+		/* this may need to be r->seqno - 1
 		// debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
-
+*/
 
 		packet_t pkt;
 		int packet_size = DATA_PACKET_SIZE;
@@ -385,24 +418,32 @@ rel_read (rel_t *r)
 			packet_size += bytes_read;
 
 		}
-		pkt.seqno = htonl(r->seqno); // set the sequence number    
+		pkt.seqno = htonl(r->seqno);
 		pkt.len = htons(packet_size);
-		pkt.ackno = htonl(r->ackno); // the sequence number of the last packet received + 1
+		pkt.ackno = htonl(r->ackno);
 		pkt.cksum = cksum((void*)&pkt, packet_size);		
 
-        // this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
-        // 
+        /* this packet seqno into the sender buffer and keep here until we receive the ack back from receiver
+         */
         int order = ntohl(pkt.seqno) - r->last_ack_received;
-        // debug("Order for new packet: %d\n", order);
         r->unacked_infos[order].packet = pkt;
 
         /*
          THIS FUNCTION SHOULD ALSO BE SENDING PACKETS UNTIL THE send_ordering_buffer IS FULL
          */
-    
+        
+        //remove_me
+        FILE *file;
+        file = fopen("file.txt","a+"); /* apend file (add text to
+                                        a file or create a file if it does not exist.*/
+        fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt.ackno)); /*writes*/
+        fclose(file); /*done!*/
+        
         conn_sendpkt(r->c, &pkt, packet_size);
 
-    // increment the sequence number for next time
+    /* increment the sequence number for next time
+     *
+     */
         r->seqno = r->seqno + 1;
 
 		if (bytes_read == -1) {
@@ -414,27 +455,37 @@ rel_read (rel_t *r)
 void
 rel_output (rel_t *r)
 {
-	// debug("---Entering rel_output---\n");
+	/* debug("---Entering rel_output---\n");
+	 *
+	 */
 	int i = 0;
 	for (i = 0; i < r->window_size; i++) {
 		packet_t f = r->receive_ordering_buffer[i];
 		if (f.ackno == null_packet().ackno) {
-			// first out of order packet encountered
+			/* first out of order packet encountered
+			 *
+			 */
 			break;
 		}
 		else {
-			// if we have enough space in the buffer            
+			/* if we have enough space in the buffer
+			 *
+			 */
 			if (conn_bufspace(r->c) > (f.len)) {
 				conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);
 
-                // send ack to free up the sender's send window
+                /* send ack to free up the sender's send window
+                 *
+                 */
                 r->ackno = r->ackno + 1;
 				send_ack(r);
 			}
 		}
 	}
 
-    // shift our receive buffer for the packets that have now been outputted
+    /* shift our receive buffer for the packets that have now been outputted
+     *
+     */
     shift_receive_buffer(r);
 }
 
@@ -454,7 +505,9 @@ rel_timer ()
     
         unacked_t null_node = null_unacked();
 
-        //Temporary constants TODO: replace them with runtime variables
+        /*Temporary constants TODO: replace them with runtime variables
+         *
+         */
         int sending_window_size = r->window_size;
         int resend_frequency = 5;
         int max_total_resend_time = resend_frequency * 10;
@@ -463,17 +516,29 @@ rel_timer ()
         for (i = 0; i< sending_window_size;i++) {
 
 
-            //unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
+            /*unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
+            */
             unacked_t* u = &(r -> unacked_infos[i]);
             u->time_since_last_send++;
 
-            //if this is actually a node
+            /*if this is actually a node
+             *
+             */
             if (u->packet.seqno != null_node.packet.seqno){
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
-                    //TODO: abstract this out and make it a method!
+                    /*
+                	//TODO: abstract this out and make it a method!
 //                    send_data_packet(n -> packet);
                     //debug("Resending Packet.");
 		//	debug("Length: %d", ntohs(u->packet.len));
+		 *
+		 */
+                    //remove_me
+                    FILE *file;
+                    file = fopen("file.txt","a+"); /* apend file (add text to
+                                                    a file or create a file if it does not exist.*/
+                    fprintf(file,"----ReSending Pkt seqno:%d, len: %d ----\n",ntohs(u->packet.seqno), ntohs(u->packet.len)); /*writes*/
+                    fclose(file); /*done!*/
                     conn_sendpkt(r->c, &(u->packet), ntohs(u->packet.len));
                 }
             }

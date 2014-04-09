@@ -1,0 +1,19 @@
+NOTES
+
+Tests:
+
+1. 
+2. 
+3. 
+4. PASSED - we successfully receive data from ./reference
+	we receive packets properly, there must be a problem with how we send packets
+5. 
+6. 
+7. 
+8. 
+9. 
+10. 
+11. 
+12. 
+13. 
+14. 
