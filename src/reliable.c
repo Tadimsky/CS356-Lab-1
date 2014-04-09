@@ -436,7 +436,7 @@ rel_read (rel_t *r)
         FILE *file;
         file = fopen("file.txt","a+"); /* apend file (add text to
                                         a file or create a file if it does not exist.*/
-        fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt.ackno)); /*writes*/
+        fprintf(file,"---Sending Seqno:%d---\n", ntohs(pkt.seqno)); /*writes*/
         fclose(file); /*done!*/
         
         conn_sendpkt(r->c, &pkt, packet_size);
