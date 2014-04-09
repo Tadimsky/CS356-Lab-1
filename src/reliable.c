@@ -86,7 +86,7 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
             const struct config_common *cc)
 {
     rel_t *r;
-    r = xmalloc (sizeof (*r));
+    r = (rel_t*) xmalloc (sizeof (*r));
     memset (r, 0, sizeof (*r));
     
     if (!c) {
@@ -112,10 +112,10 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     
     r->window_size = cc->window;
     
-    packet_t * receive_buff = xmalloc(sizeof(packet_t) * cc->window);
+    packet_t * receive_buff = (packet_t*) xmalloc(sizeof(packet_t) * cc->window);
     r->receive_ordering_buffer = receive_buff;
 
-    unacked_t * info = xmalloc(sizeof(unacked_t) * cc->window);
+    unacked_t * info = (unacked_t*) xmalloc(sizeof(unacked_t) * cc->window);
     r->unacked_infos = info;
 
     int i;
@@ -203,14 +203,14 @@ void rel_demux (const struct config_common *cc,
 
 void send_ack(rel_t *r) {
     // debug("---Entering send_ack---\n");
-    packet_t * pkt = malloc(sizeof(packet_t));
+    packet_t * pkt = (packet_t*) malloc(sizeof(packet_t));
     pkt->len = htons(ACK_PACKET_SIZE);   
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
     pkt->cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
 
     conn_sendpkt(r->c, pkt, ACK_PACKET_SIZE);
-    
+
     free(pkt);
 }
 
@@ -286,7 +286,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     if (n != pkt->len) {
         //we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
-        debug("size_t (%d) n (%d) is different from pkt->len; this is an error packet, return", pkt->len, n);
+        debug("Bytes read: (%d) is different from pkt->len (%d); this is an error packet, return.\n", pkt->len, n);
         return;
     }
     
