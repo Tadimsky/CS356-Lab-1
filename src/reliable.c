@@ -271,6 +271,8 @@ void rel_demux (const struct config_common *cc,
 
 void send_ack(rel_t *r) {
     // debug("---Entering send_ack---\n");
+    debug("Sending ACK %d.\n", r->ackno);
+
     packet_t * pkt = (packet_t*) malloc(sizeof(packet_t));
     pkt->len = htons(ACK_PACKET_SIZE);   
     pkt->ackno = htonl(r->ackno);
@@ -403,10 +405,6 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         rel_read(r);
     } 
     else {
-        if (pkt->len == DATA_PACKET_SIZE) {
-            /* received an EOF packet */
-            r->received_eof = true;
-        }
         /*pkt is a data PACKET */
         /*
         debug("received Data packet\n");
@@ -532,12 +530,14 @@ void rel_output (rel_t *r) {
 			 */
 			if (conn_bufspace(r->c) > (f.len)) {
 
+                r->ackno = r->ackno + 1;
+                send_ack(r);
+                
                 if (f.len == DATA_PACKET_SIZE) {
                     debug("EOF Packet Received!\n");
                     r->received_eof = true;
                     /* this is an EOF packet */
                     conn_output(r->c, f.data, 0); 
-                    break;
                 }
                 else {
                     conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);    
@@ -547,8 +547,7 @@ void rel_output (rel_t *r) {
                 /* send ack to free up the sender's send window
                  *
                  */
-                r->ackno = r->ackno + 1;
-				send_ack(r);
+                
 
                 
 			}
