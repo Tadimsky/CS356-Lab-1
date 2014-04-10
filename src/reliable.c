@@ -441,7 +441,7 @@ rel_read (rel_t *r)
         r->unacked_infos[order].packet = pkt;
 
         conn_sendpkt(r->c, pkt, packet_size);
-        
+
     /* increment the sequence number for next time
      *
      */
@@ -499,7 +499,6 @@ rel_output (rel_t *r)
 void
 rel_timer ()
 {
-    return;
     /* Retransmit any packets that need to be retransmitted */
     
     rel_t* r = rel_list;
