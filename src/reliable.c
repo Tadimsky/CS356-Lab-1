@@ -71,6 +71,8 @@ struct reliable_state {
     */
     unacked_t* unacked_infos;
 
+    bool read_eof;
+
 };
 rel_t *rel_list;
 
@@ -135,6 +137,8 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
     r->last_ack_received = ACK_START;
+    r->read_eof = false;
+
     return r;
 }
 
@@ -344,6 +348,8 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         r->unacked_infos[0] = *null_unacked;
         r->last_ack_received = ackno;
         shift_send_buffer(r);
+
+        rel_read(r);
     } 
     else {
         /*pkt is a data PACKET */
@@ -406,6 +412,12 @@ rel_read (rel_t *r)
 		if (bytes_read == 0) {
 			return;
 		}
+
+        /* Read no bytes and already read the end of the file */
+        if (bytes_read == -1 && r->read_eof) {
+            return;
+        }
+        
         debug("Read %d bytes\n", bytes_read);
         /* this may need to be r->seqno - 1
 		// debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
@@ -436,6 +448,7 @@ rel_read (rel_t *r)
         r->seqno = r->seqno + 1;
 
 		if (bytes_read == -1) {
+            r->read_eof = true;
 			return;
 		} 
 	}
