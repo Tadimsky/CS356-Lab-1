@@ -187,6 +187,8 @@ void destroy_unacked(unacked_t* u) {
 
 void rel_destroy (rel_t *r)
 {
+    debug("Rel Destroy\n");
+    return;
     if (r->next)
         r->next->prev = r->prev;
     *r->prev = r->next;
@@ -535,6 +537,7 @@ void rel_output (rel_t *r) {
                     r->received_eof = true;
                     /* this is an EOF packet */
                     conn_output(r->c, f.data, 0); 
+                    break;
                 }
                 else {
                     conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);    
