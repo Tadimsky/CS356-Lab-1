@@ -218,7 +218,7 @@ void send_ack(rel_t *r) {
     pkt->len = htons(ACK_PACKET_SIZE);   
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
-    pkt->cksum = cksum((void*)&pkt, ACK_PACKET_SIZE);
+    pkt->cksum = cksum((void*) pkt, ACK_PACKET_SIZE);
     //remove_me
     FILE *file;
     file = fopen("file.txt","a+"); /* apend file (add text to
@@ -441,7 +441,7 @@ rel_read (rel_t *r)
         r->unacked_infos[order].packet = pkt;
 
         conn_sendpkt(r->c, pkt, packet_size);
-
+        
     /* increment the sequence number for next time
      *
      */
@@ -512,10 +512,8 @@ rel_timer ()
         int sending_window_size = r->window_size;
         int resend_frequency = 5;
         int max_total_resend_time = resend_frequency * 10;
-        
         int i;
         for (i = 0; i< sending_window_size;i++) {
-
 
             /*unacked nodes is a linked list containing metadata and previously sent packets that have not been successfully acked by the receiver.
             */
