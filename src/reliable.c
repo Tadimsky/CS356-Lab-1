@@ -18,7 +18,21 @@
 
 
 
+
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+
 #define debug(...)  fprintf(stderr, __VA_ARGS__)
+
+#define debug_send(...) debug(KGRN __VA_ARGS__)
+#define debug_recv(...) debug(KBLU __VA_ARGS__)
+
 
 
 /*
@@ -178,6 +192,7 @@ void rel_destroy (rel_t *r)
 }
 
 void print_window(packet_t * window, size_t window_size) {
+    return;
   debug("|");
 
   int i;
@@ -304,7 +319,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         /*we have not received the full packet or it's an error packet
         //ignore it and wait for the packet to come in its entirety
         */
-        debug("Bytes read: (%d) is different from pkt->len (%d); this is an error packet, return.\n", pkt->len, n);
+        debug_recv("Bytes read: (%d) is different from pkt->len (%d); this is an error packet, return.\n", pkt->len, n);
         return;
     }
     
@@ -314,15 +329,15 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
     
     if (pkt->len < DATA_PACKET_SIZE) {
         
-        debug("Received an ACK of: %d\n", pkt->ackno);
-        debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
-        debug("\tFirst packet in send window: %d\n", ntohl(r->unacked_infos[0].packet->seqno));
+        debug_recv("Received an ACK of: %d\n", pkt->ackno);
+        debug_recv("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
+        debug_recv("\tFirst packet in send window: %d\n", ntohl(r->unacked_infos[0].packet->seqno));
 
         
         /* the ackno that was sent to us should be one larger than the last ack received on the sender side
         */
         if (pkt->ackno <= r->last_ack_received) {
-          debug("Ack No %d is out of order (already received %d)\n", pkt->ackno, r->last_ack_received);
+          debug_recv("Ack No %d is out of order (already received %d)\n", pkt->ackno, r->last_ack_received);
           return;
         }
 
@@ -334,7 +349,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
          */
 
         if (ackno < ntohl(r->unacked_infos[0].packet->seqno) + 1) {
-          debug("Ack No %d is smaller than the send window.\n", ackno);
+          debug_recv("Ack No %d is smaller than the send window.\n", ackno);
           return;
         }
         /* if we get to this point, then all seems good and we wil remove the packet that was acked from the beginning of the array
@@ -374,7 +389,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
                 send_ack(r);
             }
             else {
-                debug("Error, data packet too larger for receive window.");    
+                debug_recv("Error, data packet too larger for receive window.");    
             }
         }       
         
@@ -397,7 +412,7 @@ rel_read (rel_t *r)
 	 */
 	while (true) {
         if (r->seqno - r->last_ack_received > r->window_size) {
-            debug("Sequence Number (%d) for new packet is too large for window. (%d -> %d)\n", r->seqno, r->last_ack_received, r->last_ack_received + r->window_size);
+            debug_send("Sequence Number (%d) for new packet is too large for window. (%d -> %d)\n", r->seqno, r->last_ack_received, r->last_ack_received + r->window_size);
             /* 
                 cannot fit any new packets into the buffer
                 don't read anything in
@@ -416,7 +431,7 @@ rel_read (rel_t *r)
             return;
         }
         
-        debug("Read %d bytes\n", bytes_read);
+        debug_send("Read %d bytes\n", bytes_read);
         /* this may need to be r->seqno - 1
 		// debug("Current SeqNo: %d \t Last ACK: %d \t Window Size: %d\n", r->seqno, r->last_ack_received, r->window_size);
 */
@@ -446,7 +461,7 @@ rel_read (rel_t *r)
 
 		if (bytes_read == -1) {
             r->read_eof = true;
-            debug("EOF Packet sent with size %d.\n", ntohs(pkt->len));
+            debug_send("EOF Packet sent with size %d.\n", ntohs(pkt->len));
 			return;
 		} 
 	}
