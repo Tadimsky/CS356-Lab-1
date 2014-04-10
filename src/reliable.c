@@ -16,7 +16,12 @@
 #include <stdbool.h>
 #include "rlib.h"
 
+/*
 #define debug(...)  fprintf(stderr, __VA_ARGS__)
+*/
+
+#define debug(...)
+
 #define DATA_PACKET_SIZE 12
 #define ACK_PACKET_SIZE 8
 
@@ -150,7 +155,6 @@ void destroy_unacked(unacked_t* u) {
 
 void rel_destroy (rel_t *r)
 {
-    debug("---Entering rel_destroy---\n");
     if (r->next)
         r->next->prev = r->prev;
     *r->prev = r->next;
@@ -217,12 +221,7 @@ void send_ack(rel_t *r) {
     pkt->ackno = htonl(r->ackno);
     pkt->seqno = 0;
     pkt->cksum = cksum((void*) pkt, ACK_PACKET_SIZE);
-    //remove_me
-    FILE *file;
-    file = fopen("file.txt","a+"); /* apend file (add text to
-                                    a file or create a file if it does not exist.*/
-    fprintf(file,"---Sending Ackno:%d---\n", ntohs(pkt->ackno)); /*writes*/
-    fclose(file); /*done!*/
+    
     conn_sendpkt(r->c, pkt, ACK_PACKET_SIZE);
 
     free(pkt);
@@ -318,6 +317,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         debug("Received an ACK of: %d\n", pkt->ackno);
         debug("\tReceiver received packet with seqno: %d\n", pkt->ackno - 1);
         debug("\tFirst packet in send window: %d\n", ntohl(r->unacked_infos[0].packet->seqno));
+
         
         /* the ackno that was sent to us should be one larger than the last ack received on the sender side
         */
@@ -343,7 +343,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         // is it always the first one in the list?
          *
          */
-        r->unacked_infos[0] = *null_unacked;
+        memcpy(&(r->unacked_infos[0]), null_unacked, sizeof(unacked_t));
         r->last_ack_received = ackno;
         shift_send_buffer(r);
 
@@ -397,7 +397,7 @@ rel_read (rel_t *r)
 	 */
 	while (true) {
         if (r->seqno - r->last_ack_received > r->window_size) {
-            debug("Sequence Number (%d) for new packet is too large for window. (%d - %d)\n", r->seqno, r->last_ack_received, r->last_ack_received + r->window_size);
+            debug("Sequence Number (%d) for new packet is too large for window. (%d -> %d)\n", r->seqno, r->last_ack_received, r->last_ack_received + r->window_size);
             /* 
                 cannot fit any new packets into the buffer
                 don't read anything in
@@ -522,19 +522,6 @@ rel_timer ()
              */
             if (u->packet->seqno != null_unacked->packet->seqno){
                 if ((u -> time_since_last_send % resend_frequency == 0) && u -> time_since_last_send < max_total_resend_time){
-                    /*
-                	//TODO: abstract this out and make it a method!
-//                    send_data_packet(n -> packet);
-                    //debug("Resending Packet.");
-		//	debug("Length: %d", ntohs(u->packet.len));
-		 *
-		 */
-                    //remove_me
-                    FILE *file;
-                    file = fopen("file.txt","a+"); /* apend file (add text to
-                                                    a file or create a file if it does not exist.*/
-                    fprintf(file,"----ReSending Pkt seqno:%d, len: %d ----\n",ntohs(u->packet->seqno), ntohs(u->packet->len)); /*writes*/
-                    fclose(file); /*done!*/
                     conn_sendpkt(r->c, u->packet, ntohs(u->packet->len));
                 }
             }
