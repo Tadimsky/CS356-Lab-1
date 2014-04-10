@@ -17,13 +17,13 @@
 #include "rlib.h"
 
 
-/*
+
 #define debug(...)  fprintf(stderr, __VA_ARGS__)
-*/
 
 
+/*
 #define debug(...)
-
+*/
 
 #define DATA_PACKET_SIZE 12
 #define ACK_PACKET_SIZE 8
@@ -426,7 +426,6 @@ rel_read (rel_t *r)
 		if (bytes_read > 0) {
 			memcpy(pkt->data, buffer, bytes_read);
 			packet_size += bytes_read;
-
 		}
 		pkt->seqno = htonl(r->seqno);
 		pkt->len = htons(packet_size);
@@ -447,6 +446,7 @@ rel_read (rel_t *r)
 
 		if (bytes_read == -1) {
             r->read_eof = true;
+            debug("EOF Packet sent with size %d.\n", ntohs(pkt->len));
 			return;
 		} 
 	}
@@ -472,13 +472,23 @@ rel_output (rel_t *r)
 			 *
 			 */
 			if (conn_bufspace(r->c) > (f.len)) {
-				conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);
+                if (f.len == DATA_PACKET_SIZE) {
+                    debug("EOF Packet Received!\n");
+                    /* this is an EOF packet */
+                    conn_output(r->c, f.data, 0);    
+                }
+                else {
+                    conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);    
+                }
+				
 
                 /* send ack to free up the sender's send window
                  *
                  */
                 r->ackno = r->ackno + 1;
 				send_ack(r);
+
+                
 			}
 		}
 	}
