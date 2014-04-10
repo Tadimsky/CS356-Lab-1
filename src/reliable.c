@@ -91,6 +91,7 @@ struct reliable_state {
     unacked_t* unacked_infos;
 
     bool read_eof;
+    bool received_eof;
 
 };
 rel_t *rel_list;
@@ -172,7 +173,7 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
     r->ackno = ACK_START;
     r->last_ack_received = ACK_START;
     r->read_eof = false;
-
+    r->received_eof = false;
     return r;
 }
 
@@ -202,6 +203,27 @@ void rel_destroy (rel_t *r)
         destroy_unacked(current->unacked_infos);
         free(current);
         current = next;
+    }
+}
+
+void check_complete(rel_t * r) {
+    debug("calling check_complete\n");
+    debug("read_eof %d, received_eof %d \n", r->read_eof, r->received_eof);
+
+    if (r->read_eof && r->received_eof) {
+        /* all packets ACKed */
+        if ((r->unacked_infos[0].packet)->seqno != null_packet->seqno) {
+            debug("Waiting on unacked packets.\n");
+            return;
+        }        
+        /* all output written */
+        if (r->receive_ordering_buffer[0].ackno !=  null_packet->ackno) {
+            debug("Not all output outputted.\n");
+            return;
+        }
+
+        rel_destroy(r);
+        exit(0);
     }
 }
 
@@ -379,6 +401,10 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         rel_read(r);
     } 
     else {
+        if (pkt->len == DATA_PACKET_SIZE) {
+            /* received an EOF packet */
+            r->received_eof = true;
+        }
         /*pkt is a data PACKET */
         /*
         debug("received Data packet\n");
@@ -408,6 +434,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
         }       
         
     }
+    check_complete(r);
 }
 
 
@@ -455,6 +482,8 @@ void rel_read (rel_t *r)
 			memcpy(pkt->data, buffer, bytes_read);
 			packet_size += bytes_read;
 		}
+        debug_send("Sending Packet #%d\n", r->seqno);
+
 		pkt->seqno = htonl(r->seqno);
 		pkt->len = htons(packet_size);
 		pkt->ackno = htonl(r->ackno);
@@ -475,6 +504,7 @@ void rel_read (rel_t *r)
 		if (bytes_read == -1) {
             r->read_eof = true;
             debug_send("EOF Packet sent with size %d.\n", ntohs(pkt->len));
+            check_complete(r);
 			return;
 		} 
 	}
@@ -499,10 +529,12 @@ void rel_output (rel_t *r) {
 			 *
 			 */
 			if (conn_bufspace(r->c) > (f.len)) {
+
                 if (f.len == DATA_PACKET_SIZE) {
                     debug("EOF Packet Received!\n");
+                    r->received_eof = true;
                     /* this is an EOF packet */
-                    conn_output(r->c, f.data, 0);    
+                    conn_output(r->c, f.data, 0); 
                 }
                 else {
                     conn_output(r->c, f.data, f.len - DATA_PACKET_SIZE);    
@@ -518,6 +550,7 @@ void rel_output (rel_t *r) {
                 
 			}
 		}
+        debug("LOL\n");
 	}
 
     /* shift our receive buffer for the packets that have now been outputted
