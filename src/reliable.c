@@ -16,11 +16,14 @@
 #include <stdbool.h>
 #include "rlib.h"
 
+
 /*
 #define debug(...)  fprintf(stderr, __VA_ARGS__)
 */
 
+
 #define debug(...)
+
 
 #define DATA_PACKET_SIZE 12
 #define ACK_PACKET_SIZE 8
@@ -175,7 +178,6 @@ void rel_destroy (rel_t *r)
 }
 
 void print_window(packet_t * window, size_t window_size) {
-    return;
   debug("|");
 
   int i;
@@ -294,8 +296,6 @@ void shift_send_buffer (rel_t *r) {
  */
 void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 {
-  /* debug("---Entering rel_recvpkt---\n"); */
-
 	pkt->len = ntohs(pkt->len);
 	pkt->ackno = ntohl(pkt->ackno);
 	pkt->seqno = ntohl(pkt->seqno);
