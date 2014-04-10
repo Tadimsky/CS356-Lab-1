@@ -51,9 +51,6 @@ struct unacked_packet_node {
 };
 typedef struct unacked_packet_node unacked_t;
 
-/* Returns a packet with seqno = 0 (acts as a NULL packet)
- */
-
 packet_t * null_packet;
 unacked_t * null_unacked;
 
@@ -97,6 +94,23 @@ struct reliable_state {
 
 };
 rel_t *rel_list;
+
+
+
+rel_t * rel_create(conn_t *c, const struct sockaddr_storage *ss, const struct config_common *cc);
+void destroy_packet(packet_t* p);
+void destroy_unacked(unacked_t* u);
+void rel_destroy (rel_t *r);
+void print_window(packet_t * window, size_t window_size);
+void rel_demux (const struct config_common *cc, const struct sockaddr_storage *ss, packet_t *pkt, size_t len);
+void send_ack(rel_t *r);
+void shift_receive_buffer (rel_t *r);
+void shift_send_buffer (rel_t *r);
+void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n);
+void rel_read (rel_t *r);
+void rel_output (rel_t *r);
+void rel_timer ();
+
 
 
 /* Creates a new reliable protocol session, returns NULL on failure.
@@ -400,8 +414,7 @@ void rel_recvpkt (rel_t *r, packet_t *pkt, size_t n)
 /*
  Take information from standard input and create packets.  Will call some means of sending to the appropriate receiver.
  */
-void
-rel_read (rel_t *r)
+void rel_read (rel_t *r)
 {
     /* debug("---Entering rel_read---\n");
      *
@@ -467,9 +480,8 @@ rel_read (rel_t *r)
 	}
 }
 
-void
-rel_output (rel_t *r)
-{
+
+void rel_output (rel_t *r) {
 	/* debug("---Entering rel_output---\n");
 	 *
 	 */
@@ -519,8 +531,7 @@ rel_output (rel_t *r)
   There also exists a maximum time after which the packet will not continue to be resent.
   Timeout
  */
-void
-rel_timer ()
+void rel_timer ()
 {
     /* Retransmit any packets that need to be retransmitted */
     
