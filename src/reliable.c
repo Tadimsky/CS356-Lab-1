@@ -127,12 +127,10 @@ rel_t * rel_create (conn_t *c, const struct sockaddr_storage *ss,
 
     int i;
     for (i = 0; i < cc->window; i++) {
-      r->receive_ordering_buffer[i] = *null_packet;
-      r->unacked_infos[i] = *null_unacked;
+        memcpy(&(r->receive_ordering_buffer[i]), null_packet, sizeof(packet_t));
+        memcpy(&(r->unacked_infos[i]), null_unacked, sizeof(unacked_t));
         r->unacked_infos[i].time_since_last_send = 0;
     }
-
-
     
     r->seqno = SEQ_START;
     r->ackno = ACK_START;
